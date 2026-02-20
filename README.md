@@ -1,71 +1,68 @@
-# 📡 K-Scanner | Live Forensic Process Analysis Studio
+# 📡 K-Scanner | Advanced Linux Forensic Memory Auditor
 
-Real-time memory integrity audit. Identify code injections. Detect fileless malware.
-**Everything running locally on your machine, zero system interruption.**
+High-speed triage tool for detecting **RWX** memory anomalies and fileless threats in real-time. Engineered for surgical precision in live forensic environments.
 
 ![License](https://img.shields.io/badge/license-MIT-green) ![Platform](https://img.shields.io/badge/platform-Linux-lightgrey) ![Language](https://img.shields.io/badge/language-C-blue)
 
 ---
 
-## 🔍 What is K-Scanner?
+## 🔍 Overview
 
-K-Scanner is a high-performance forensic triage tool for Linux systems, designed to identify RAM-based attack vectors. Think of it as an "X-ray" for your processes: it maps **RWX (Read, Write, Execute)** memory segments—regions frequently exploited for shellcode injection and hidden payloads.
+**K-Scanner** is a lightweight, specialized forensic tool designed to audit the memory integrity of active processes. By analyzing the `/proc` virtual filesystem, it identifies memory regions that violate the **W^X (Write XOR Execute)** security principle—a hallmark of shellcode injection, packers, and modern fileless malware.
 
-Unlike intrusive tools that risk system stability, K-Scanner focuses on:
-
-* **Complete Privacy** — All analysis is performed via `/proc` metadata; no data leaves your machine.
-* **Production Stability** — Zero-Freeze Policy through Passive Metadata Analysis.
-* **Forensic Integrity** — Read-only operations ensure original evidence remains untainted.
-* **Native Performance** — Built in pure C for low CPU overhead and zero latency.
+### 🛡️ Core Pillars
+* **Stealth & Non-Intrusive:** Operates without attaching debuggers (no `ptrace`), making it undetectable by most anti-forensic techniques.
+* **Forensic Fidelity:** Read-only metadata analysis ensures the system state and process memory remain untainted for later investigation.
+* **Architecture:** Optimized C code for minimal resource footprint during high-stress incident response.
 
 ---
 
 ## 📸 Project in Action
 
 ![Initial Scan](./Imagens/kscanner1.png)
-*Figure 1: Automated scan validating core system integrity and kernel threads.*
+*Figure 1: Automated system-wide integrity validation sequence.*
 
 ![Threat Detection](./Imagens/kscanner2.png)
-*Figure 2: Real-time Alert: Identifying multiple RWX segments in application subprocesses.*
+*Figure 2: Active RWX Alert: Pinpointing suspicious memory pages in real-time.*
 
-![Forensic Deep Dive](./Imagens/kscanner3.png)
-*Figure 3: Forensic correlation using Tmux, Hexdump, and SHA256 validation.*
-
----
-
-## ✨ Key Features
-
-### Real-Time Memory Auditing
-Based on the **W^X** (Write XOR Execute) security policy, the scanner audits every active process:
-* **🟢 STATUS SAFE:** Process strictly adheres to security policies.
-* **🔴 RWX ALERT:** Identifies dangerous memory capable of simultaneous writing and execution.
-
-### Guaranteed Stability (Zero-Freeze)
-Engineered for environments where uptime is critical:
-* **Passive Analysis:** Does not attach debuggers (ptrace), preventing Kernel Panics.
-* **⚠️ ACTION REQUIRED:** When encountering locked regions, selecting **Option 3 (Ignore)** ensures the system remains responsive and prevents freezes.
-
-### Post-Detection Methodology
-K-Scanner integrates seamlessly with industry-standard forensic tools:
-1.  **Strings:** Extract C2 IPs or malicious commands: `sudo strings /proc/[PID]/mem | grep -i "http"`
-2.  **SHA256:** Verify the integrity of the running binary: `sha256sum /proc/[PID]/exe`
-3.  **Hexdump:** Inspect bytes to identify injected ELF headers: `sudo dd if=/proc/[PID]/mem bs=1 skip=[ADDR] count=512 | hexdump -C`
+![Forensic Analysis](./Imagens/kscanner3.png)
+*Figure 3: Multi-pane forensic workflow: Validating process integrity via SHA256 and Hexdump.*
 
 ---
 
-## 🚀 Quick Start
+## ✨ Key Capabilities
+
+### 🛡️ Live Memory Auditing
+Continuous monitoring of memory protection flags across all PIDs:
+* **🟢 STATUS SAFE:** Memory pages adhere to standard security permissions.
+* **🔴 RWX ALERT:** Immediate detection of simultaneous Write and Execute permissions (High Risk).
+
+### ⚙️ Operational Reliability
+K-Scanner is built for production environments where stability is paramount:
+* **Passive Metadata Mapping:** Bypasses the need for process suspension, ensuring zero downtime.
+* **Tactical Resilience:** Designed to handle sensitive kernel threads and locked pages gracefully—users can simply skip inaccessible regions to maintain scan momentum.
+
+### 🛠️ Post-Detection Toolkit
+Seamlessly transition from detection to deep analysis using built-in Linux forensic standards:
+* **Binary Hash:** `sha256sum /proc/[PID]/exe` (Verifies if the disk image matches the running process).
+* **Memory Carving:** `sudo dd if=/proc/[PID]/mem ...` (Extracts suspicious shellcode for reverse engineering).
+* **String Analysis:** Scans for C2 URLs or obfuscated commands within process RAM.
+
+---
+
+## 🚀 Deployment
 
 ### Prerequisites
-* Linux System (Extensively tested on **Arch Linux**)
-* `gcc` compiler and `make` utility
+* **OS:** Linux (Tested on Arch Linux)
+* **Tools:** `gcc`, `make`, `sudo` privileges
 
-### Installation
+### Build & Run
 ```bash
 # Clone the repository
 git clone [https://github.com/jeffersoncesarantunes/K-Scanner.git](https://github.com/jeffersoncesarantunes/K-Scanner.git)
 cd K-Scanner
 
-# Compile and Run
+# Compile and execute triage
 make clean && make
 sudo ./build/kscanner
 ```
@@ -74,29 +71,28 @@ sudo ./build/kscanner
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
+| Component | Technology |
 | :--- | :--- |
 | **Language** | C (C99) |
-| **Analysis Engine** | /proc Virtual Filesystem |
-| **Build System** | GNU Make |
-| **Forensics** | Memory Map Metadata Audit |
-| **Tested On** | Arch Linux |
+| **Data Source** | /proc Filesystem (Metadata Audit) |
+| **Build Tool** | GNU Make |
+| **Target** | Linux Kernel 4.x/5.x/6.x |
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] RWX segment detection logic
-- [x] Integration with external forensic tools
-- [ ] JSON logging export for SIEM integration
-- [ ] Ncurses-based Terminal User Interface (TUI)
-- [ ] Containerized process analysis (Docker/K8s support)
+- [x] High-speed RWX detection engine
+- [x] External forensic tool integration guide
+- [ ] Structured JSON output for SIEM ingestion
+- [ ] Interactive TUI (Terminal User Interface)
+- [ ] Memory dump automation for flagged PIDs
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. See the [LICENSE](./LICENSE) file for details.
+Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ---
-*Developed for security analysts who demand speed without sacrificing system uptime.*
+*Built for analysts who need visibility where traditional tools remain blind.*
