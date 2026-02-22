@@ -1,24 +1,48 @@
-# K-Scanner
-A lightweight Linux memory auditing tool focused on RWX detection.
+# 🐧 K-Scanner
 
-## Overview
+Lightweight Linux memory auditing tool focused on RWX detection and forensic triage.
+
+---
+
+## ● Overview
 
 K-Scanner is a minimal forensic utility designed to audit memory protection flags of active Linux processes.
 
-It analyzes the /proc virtual filesystem to identify memory regions that violate the W^X (Write XOR Execute) security principle — a condition commonly associated with:
+It analyzes the `/proc` virtual filesystem to identify memory regions that violate the W^X (Write XOR Execute) security principle — a condition commonly associated with:
 
 - Shellcode injection
 - JIT-compiled regions
 - Packed executables
 - Fileless malware techniques
 
-The project is written in pure C with emphasis on performance, clarity, and forensic integrity.
+The project is written in pure C (C99) with emphasis on performance, clarity, and forensic integrity.
 
-## How It Works
+---
+
+## ● Why
+
+Modern Linux systems rely heavily on memory protection mechanisms.
+
+However, visibility into runtime RWX memory regions is not centralized.
+
+K-Scanner provides:
+
+- Deterministic RWX detection
+- System-wide process inspection
+- Live forensic triage support
+- Lightweight incident response tooling
+
+It focuses strictly on observable memory metadata.
+
+---
+
+## ● How It Works
 
 K-Scanner parses:
 
+```bash
 /proc/[PID]/maps
+```
 
 For each running process, it inspects memory segments and evaluates their permission flags.
 
@@ -27,48 +51,35 @@ If a memory region simultaneously contains:
 - W (Write)
 - X (Execute)
 
-an RWX alert is triggered, since this combination weakens modern memory protection strategies.
+an RWX alert is triggered.
 
-The scanner operates through read-only metadata inspection and does not rely on intrusive debugging mechanisms such as ptrace.
+The scanner operates through read-only metadata inspection and does not rely on intrusive debugging mechanisms such as `ptrace`.
 
-## Design Philosophy
+---
 
-K-Scanner was built around three principles:
+## ● Example Output
 
-1. Simplicity  
-   No kernel modules, no injection, no process suspension.
+```text
+PID    USER    STATUS
+1023   root    SAFE
+2045   www     ALERT (RWX region detected)
+```
+---
 
-2. Forensic Integrity  
-   The scanner does not modify process memory or alter execution state.
+## ● Project in Action
 
-3. Performance  
-   Implemented in optimized C (C99) for minimal overhead during live system analysis.
+![Live Scan](./Imagens/kscanner1.png)
+*1- Live system-wide RWX memory scan*
 
-## Limitations
+![RWX Detection](./Imagens/kscanner2.png)
+*2- RWX region detection with alert classification*
 
-- RWX detection alone does NOT confirm malicious activity.
-- Some legitimate applications (e.g., JIT engines) may legitimately allocate RWX regions.
-- Elevated privileges may be required to inspect certain processes.
-- Tested primarily on Arch Linux (Kernel 6.x).
-- Does not perform full memory content inspection by default.
+![Forensic Workflow](./Imagens/kscanner3.png)
+*3- Forensic memory extraction and integrity verification*
 
-## Project in Action
+---
 
-Figure 1 — System-wide memory audit  
-Displays scanning across all active PIDs.
-
-Figure 2 — RWX Detection Alert  
-Highlights suspicious memory regions.
-
-Figure 3 — Forensic Follow-up  
-Workflow combining:
-- SHA256 binary validation
-- Memory extraction
-- String analysis
-
-Screenshots are available in the /Imagens directory.
-
-## Features
+## ● Features
 
 - System-wide PID scanning
 - RWX memory detection engine
@@ -77,53 +88,79 @@ Screenshots are available in the /Imagens directory.
 - Low memory footprint
 - Designed for forensic triage scenarios
 
-## Operational Integrity
+---
 
-K-Scanner is designed for stability in live environments:
+## ● Design Philosophy
 
-- Handles inaccessible /proc entries gracefully
-- Skips restricted kernel threads without crashing
-- Maintains scan continuity under permission errors
+K-Scanner was built around three principles:
 
-The focus is reliability during incident response and live investigations.
+1. Simplicity  
+   No kernel modules, no injection, no process suspension.
 
-## Investigation Workflow
+2. Forensic Integrity  
+   The scanner does not modify process memory or execution state.
+
+3. Performance  
+   Optimized C implementation for minimal overhead during live analysis.
+
+---
+
+## ● Limitations
+
+- RWX detection alone does NOT confirm malicious activity.
+- Some legitimate applications (e.g., JIT engines) may allocate RWX regions.
+- Elevated privileges may be required to inspect certain processes.
+- Does not perform full memory content inspection by default.
+- Tested primarily on Arch Linux (Kernel 6.x).
+
+---
+
+## ● Investigation Workflow
 
 After detecting an RWX region, analysts may proceed with:
 
 Binary validation:
+
 sha256sum /proc/[PID]/exe
 
-Memory extraction (advanced):
+Advanced memory extraction (use cautiously):
+
 sudo dd if=/proc/[PID]/mem of=dump.bin bs=1 skip=<offset> count=<size>
 
-String inspection:
-Search for suspicious domains, encoded commands, or unusual artifacts in memory dumps.
+String inspection of dumps to identify suspicious artifacts.
 
-## Deployment
+---
 
-Requirements:
+## ● Deployment
+
+### Requirements
+
 - Linux OS
 - gcc
 - make
 - sudo privileges
 
-Build and execute:
-
+### Build and Execute
+```bash
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
-
 make clean && make
 sudo ./build/kscanner
 
-## Tech Stack
+```
 
-Language: C (C99)  
-Data Source: /proc Filesystem  
-Build Tool: GNU Make  
-Target: Linux Kernel 4.x / 5.x / 6.x  
+---
 
-## Roadmap
+## ● Tech Stack
+
+- Language: C (C99)
+- Data Source: `/proc` filesystem
+- Build Tool: GNU Make
+- Target: Linux Kernel 4.x / 5.x / 6.x
+
+---
+
+## ● Roadmap
 
 - RWX detection engine (Completed)
 - Structured output format (Completed)
@@ -133,10 +170,12 @@ Target: Linux Kernel 4.x / 5.x / 6.x
 - Multi-threaded scan optimization
 - Kernel telemetry research
 
-## License
+---
+
+## ● License
 
 Distributed under the MIT License.  
-See LICENSE file for more information.
+See LICENSE for details.
 
 Developed as a practical exploration of Linux memory internals and live forensic analysis techniques.
 
