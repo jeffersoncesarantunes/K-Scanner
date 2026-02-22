@@ -105,6 +105,18 @@ K-Scanner was built around three principles:
 
 ---
 
+## ● Documentation
+
+Additional technical specifications are available in the `docs/` directory:
+
+- **[Architecture & API](docs/architecture.md)**: System design and core forensic functions.
+- **[Threat Model](docs/threat_model.md)**: Scope, security assumptions, and attack scenarios.
+- **[Forensic Methodology](docs/forensic_methodology.md)**: RWX theory and investigation workflow.
+- **[Use Cases](docs/use_cases.md)**: Practical applications for IR, Research, and Hardening.
+- **[Performance & Limitations](docs/performance_and_limitations.md)**: Operational impact and design constraints.
+
+---
+
 ## ● Limitations
 
 - RWX detection alone does NOT confirm malicious activity.
