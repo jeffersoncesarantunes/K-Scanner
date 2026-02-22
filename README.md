@@ -172,15 +172,17 @@ sudo ./build/kscanner
 
 ---
 
+---
+
 ## ● Roadmap
 
-- RWX detection engine (Completed)
-- Structured output format (Completed)
-- JSON export for SIEM integration
-- Interactive TUI interface
-- Automated memory dump for flagged PIDs
-- Multi-threaded scan optimization
-- Kernel telemetry research
+- [x] RWX detection engine
+- [x] Structured output format
+- [ ] JSON export for SIEM integration
+- [ ] Interactive TUI interface
+- [ ] Automated memory dump for flagged PIDs
+- [ ] Multi-threaded scan optimization
+- [ ] Kernel telemetry research
 
 ---
 
