@@ -2,6 +2,20 @@
 
 Lightweight Linux memory auditing tool focused on RWX detection and forensic triage.
 
+> **Project:** K-Scanner (Kernel-level Security Scanner)  
+> **Author:** Jefferson Cesar Antunes  
+> **License:** MIT  
+> **Version:** 1.0.0  
+> **Description:** Active Security Auditing & Hardening Tool for Linux Systems.
+
+---
+
+## ● Etymology & Origin
+
+The name **k-scanner** was born from the project's focus on the **Kernel** (the heart of the Linux Operating System). 
+
+The "k" symbolizes the tool's mission to dive deep into system-level configurations, permissions, and sensitive files. It acts as a sentinel, scanning the "foundations" (Kernel-space and System-space) to ensure that the base of the OS is hardened against potential threats.
+
 ---
 
 ## ● Overview
