@@ -73,6 +73,7 @@ The scanner operates through read-only metadata inspection and does not rely on 
 
 ### ● Example Output
 
+```text
 ┌────────┬──────────────────────────────────┬────────────────────┬────────────────────┐
 │  PID   │ PROCESS NAME                     │ STATUS             │ MEM ADDRESS        │
 ├────────┼──────────────────────────────────┼────────────────────┼────────────────────┤
@@ -83,7 +84,10 @@ The scanner operates through read-only metadata inspection and does not rely on 
 │ 2708   │ Web Content                      │ RWX ALERT          │ 32071f8e1000       │
 │ 3021   │ bash                             │ SAFE               │ 0x00000000         │
 └────────┴──────────────────────────────────┴────────────────────┴────────────────────┘
+
 Scan completed. RWX alerts indicate memory regions with Read, Write, and Execute permissions.
+
+```
 
 ## ● Project in Action
 
