@@ -195,8 +195,6 @@ sudo ./build/kscanner
 
 ---
 
----
-
 ## ● Roadmap
 
 - [x] RWX detection engine
