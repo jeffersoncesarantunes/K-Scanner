@@ -68,9 +68,14 @@ The scanner operates through read-only metadata inspection and does not rely on 
 
 ● Project in Action
 
-1. **Live Scan:** System-wide RWX memory scan.
-2. **RWX Detection:** Region detection with alert classification.
-3. **Forensic Workflow:** Memory extraction and integrity verification.
+![Initial Scan](./Imagens/kscanner1.png)
+*1- Automated baseline evaluation of global memory posture.*
+
+![RWX Detection](./Imagens/kscanner2.png)
+*2- Real-time detection of memory regions violating W^X principles.*
+
+![Forensic Summary](./Imagens/kscanner3.png)
+*3- Forensic audit reporting and risk assessment for flagged PIDs.*
 
 ● Features
 
