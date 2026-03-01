@@ -8,8 +8,6 @@ Lightweight Linux memory auditing tool focused on RWX detection and forensic tri
 > **Version:** 1.0.0  
 > **Description:** Active Security Auditing & Hardening Tool for Linux Systems.
 
----
-
 ● Etymology & Origin
 
 The name **k-scanner** was born from the project's focus on the **Kernel** (the heart of the Linux Operating System). 
