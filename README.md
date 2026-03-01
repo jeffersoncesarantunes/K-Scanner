@@ -8,13 +8,13 @@ Lightweight Linux memory auditing tool focused on RWX detection and forensic tri
 > **Version:** 1.0.0  
 > **Description:** Active Security Auditing & Hardening Tool for Linux Systems.
 
-● Etymology & Origin
+## ● Etymology & Origin
 
 The name **k-scanner** was born from the project's focus on the **Kernel** (the heart of the Linux Operating System). 
 
 The "k" symbolizes the tool's mission to dive deep into system-level configurations, permissions, and sensitive files. It acts as a sentinel, scanning the "foundations" (Kernel-space and System-space) to ensure that the base of the OS is hardened against potential threats.
 
-● Overview
+## ● Overview
 
 K-Scanner is a minimal forensic utility designed to audit memory protection flags of active Linux processes.
 
@@ -27,7 +27,7 @@ It analyzes the `/proc` virtual filesystem to identify memory regions that viola
 
 The project is written in pure C (C99) with emphasis on performance, clarity, and forensic integrity.
 
-● Why
+## ● Why
 
 Modern Linux systems rely heavily on memory protection mechanisms. However, visibility into runtime RWX memory regions is not centralized.
 
@@ -39,7 +39,7 @@ K-Scanner provides:
 
 It focuses strictly on observable memory metadata.
 
-● How It Works
+## ● How It Works
 
 K-Scanner parses the virtual maps of active processes:
 
@@ -51,7 +51,7 @@ For each running process, it inspects memory segments and evaluates their permis
 
 The scanner operates through read-only metadata inspection and does not rely on intrusive debugging mechanisms such as `ptrace`.
 
-● Example Output
+## ● Example Output
 
 ```text
 ┌────────┬──────────────────────────────────┬────────────────────┬────────────────────┐
@@ -66,7 +66,7 @@ The scanner operates through read-only metadata inspection and does not rely on 
 └────────┴──────────────────────────────────┴────────────────────┴────────────────────┘
 ```
 
-● Project in Action
+## ● Project in Action
 
 ![Initial Scan](./Imagens/kscanner1.png)
 *1- Automated baseline evaluation of global memory posture.*
@@ -77,7 +77,7 @@ The scanner operates through read-only metadata inspection and does not rely on 
 ![Forensic Summary](./Imagens/kscanner3.png)
 *3- Forensic audit reporting and risk assessment for flagged PIDs.*
 
-● Features
+## ● Features
 
 - System-wide PID scanning.
 - RWX memory detection engine.
@@ -86,7 +86,7 @@ The scanner operates through read-only metadata inspection and does not rely on 
 - Low memory footprint.
 - Designed for forensic triage scenarios.
 
-● Operational Integrity
+## ● Operational Integrity
 
 K-Scanner is built for stability and forensic neutrality:
 
@@ -95,7 +95,7 @@ K-Scanner is built for stability and forensic neutrality:
 3. **Performance:** Optimized C implementation for minimal overhead during live analysis.
 4. **Passive Inspection:** Uses read-only metadata via /proc.
 
-● Investigation Workflow
+## ● Investigation Workflow
 
 After detecting an RWX region, analysts may proceed with:
 
@@ -112,7 +112,7 @@ sudo dd if=/proc/[PID]/mem of=dump.bin bs=1 skip=<offset> count=<size>
 3. **Artifact Inspection:**
 Use `strings` or `hexdump` on the generated dump to identify malicious payloads.
 
-● Deployment
+## ● Deployment
 
 **Requirements:**
 - Linux OS (Tested on Arch Linux 6.x).
@@ -127,14 +127,14 @@ make clean && make
 sudo ./build/kscanner
 ```
 
-● Tech Stack
+## ● Tech Stack
 
 - **Language:** C (C99)
 - **Data Source:** /proc filesystem
 - **Build Tool:** GNU Make
 - **Target:** Linux Kernel 4.x / 5.x / 6.x
 
-● Roadmap
+## ● Roadmap
 
 - [x] RWX detection engine
 - [x] Structured output format
@@ -142,6 +142,6 @@ sudo ./build/kscanner
 - [ ] Interactive TUI interface
 - [ ] Automated memory dump for flagged PIDs
 
-● License
+## ● License
 
-Distributed under the MIT License. See LICENSE for details.
+Distributed under the MIT License. See [LICENSE](./LICENSE) for details.
