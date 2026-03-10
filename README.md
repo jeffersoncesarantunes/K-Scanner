@@ -1,5 +1,9 @@
 # 🐧 K-Scanner
 
+[![Linux](https://img.shields.io/badge/platform-linux-blue)](https://kernel.org)
+[![Language](https://img.shields.io/badge/language-C-blue)](https://gcc.gnu.org/)
+[![License](https://img.shields.io/badge/license-MIT-red)](LICENSE)
+
 Lightweight Linux memory auditing tool focused on RWX detection and forensic triage.
 
 > **Project:** K-Scanner (Kernel-level Security Scanner)  
@@ -10,9 +14,9 @@ Lightweight Linux memory auditing tool focused on RWX detection and forensic tri
 
 ## ● Etymology & Origin
 
-The name **k-scanner** was born from the project's focus on the **Kernel** (the heart of the Linux Operating System). 
+The name **K-Scanner** was born from the project's focus on the **Kernel** (the heart of the Linux Operating System).
 
-The "k" symbolizes the tool's mission to dive deep into system-level configurations, permissions, and sensitive files. It acts as a sentinel, scanning the "foundations" (Kernel-space and System-space) to ensure that the base of the OS is hardened against potential threats.
+The "K" symbolizes the tool's mission to dive deep into system-level configurations, permissions, and sensitive files. It acts as a sentinel, scanning the "foundations" (Kernel-space and System-space) to ensure that the base of the OS is hardened against potential threats.
 
 ## ● Overview
 
@@ -32,6 +36,7 @@ The project is written in pure C (C99) with emphasis on performance, clarity, an
 Modern Linux systems rely heavily on memory protection mechanisms. However, visibility into runtime RWX memory regions is not centralized.
 
 K-Scanner provides:
+
 - Deterministic RWX detection
 - System-wide process inspection
 - Live forensic triage support
@@ -47,7 +52,7 @@ K-Scanner parses the virtual maps of active processes:
 /proc/[PID]/maps
 ```
 
-For each running process, it inspects memory segments and evaluates their permission flags. If a memory region simultaneously contains **W (Write)** and **X (Execute)**, an RWX alert is triggered.
+For each running process, it inspects memory segments and evaluates their permission flags. If a memory segment contains both **Write (W)** and **Execute (X)** permissions simultaneously, an RWX alert is triggered.
 
 The scanner operates through read-only metadata inspection and does not rely on intrusive debugging mechanisms such as `ptrace`.
 
@@ -79,12 +84,12 @@ The scanner operates through read-only metadata inspection and does not rely on 
 
 ## ● Features
 
-- System-wide PID scanning.
-- RWX memory detection engine.
-- SAFE / ALERT classification.
-- Clean terminal output.
-- Low memory footprint.
-- Designed for forensic triage scenarios.
+- System-wide PID scanning
+- RWX memory detection engine
+- SAFE / ALERT classification
+- Clean terminal output
+- Low memory footprint
+- Designed for forensic triage scenarios
 
 ## ● Operational Integrity
 
@@ -99,27 +104,32 @@ K-Scanner is built for stability and forensic neutrality:
 
 After detecting an RWX region, analysts may proceed with:
 
-1. **Binary Validation:**
+1. **Binary Validation**
+
 ```bash
 sha256sum /proc/[PID]/exe
 ```
 
-2. **Advanced Memory Extraction:**
+2. **Advanced Memory Extraction**
+
 ```bash
 sudo dd if=/proc/[PID]/mem of=dump.bin bs=1 skip=<offset> count=<size>
 ```
 
-3. **Artifact Inspection:**
-Use `strings` or `hexdump` on the generated dump to identify malicious payloads.
+3. **Artifact Inspection**
+
+Use `strings` or `hexdump` on the generated dump to identify suspicious payloads.
 
 ## ● Deployment
 
 **Requirements:**
-- Linux OS (Tested on Arch Linux 6.x).
-- gcc & make.
-- Sudo privileges.
+
+- Linux OS (Tested on Arch Linux 6.x)
+- gcc & make
+- sudo privileges
 
 **Build and Execute:**
+
 ```bash
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
