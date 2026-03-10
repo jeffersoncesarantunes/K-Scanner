@@ -3,6 +3,8 @@
 [![Linux](https://img.shields.io/badge/platform-linux-blue)](https://kernel.org)
 [![Language](https://img.shields.io/badge/language-C-blue)](https://gcc.gnu.org/)
 [![License](https://img.shields.io/badge/license-MIT-red)](LICENSE)
+![Version](https://img.shields.io/badge/version-1.0.0-orange)
+![Status](https://img.shields.io/badge/status-active-success)
 
 Lightweight Linux memory auditing tool focused on RWX detection and forensic triage.
 
