@@ -1,5 +1,7 @@
 # 🐧 K-Scanner
 
+Lightweight Linux memory auditing tool focused on RWX detection and forensic triage.
+
 [![Linux](https://img.shields.io/badge/platform-linux-blue)](https://kernel.org)
 [![Language](https://img.shields.io/badge/language-C-blue)](https://gcc.gnu.org/)
 [![License](https://img.shields.io/badge/license-MIT-red)](LICENSE)
@@ -9,10 +11,8 @@
 ## 🌐 Contact
 
 [![Discord](https://img.shields.io/badge/Discord-Jefferson-5865F2?logo=discord&logoColor=white)](https://discord.com/users/1476405883733807247)
-[![X](https://img.shields.io/badge/X-@j3ff3rsonc3sar-000000?logo=x&logoColor=white)](https://x.com/j3ff3rsonc3sar)
+[![X](https://img.shields.io/badge/@j3ff3rsonc3sar-000000?logo=x&logoColor=white)](https://x.com/j3ff3rsonc3sar)
 [![Mastodon](https://img.shields.io/badge/Mastodon-@jeffersoncesar-6364FF?logo=mastodon&logoColor=white)](https://mastodon.social/@jeffersoncesar)
-
-Lightweight Linux memory auditing tool focused on RWX detection and forensic triage.
 
 > **Project:** K-Scanner (Kernel-level Security Scanner)  
 > **Author:** Jefferson Cesar Antunes  
