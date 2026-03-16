@@ -136,12 +136,19 @@ Use `strings` or `hexdump` on the generated dump to identify suspicious payloads
 - gcc & make
 - sudo privileges
 
-**Build and Execute:**
+## ● Build and Run
 
 ```bash
+# Clone the repository
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
+
+# Enter the project directory
 cd K-Scanner
-make clean && make
+
+# Build the project
+make
+
+# Run the scanner (requires root privileges)
 sudo ./build/kscanner
 ```
 
