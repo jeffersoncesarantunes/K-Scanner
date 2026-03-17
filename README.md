@@ -2,11 +2,15 @@
 
 Lightweight Linux memory auditing tool focused on RWX detection and forensic triage.
 
-> **Project:** K-Scanner (Kernel-level Security Scanner)
-> **Author:** Jefferson Cesar Antunes
-> **License:** MIT
-> **Version:** 1.0.0
-> **Description:** Active Security Auditing & Hardening Tool for Linux Systems.
+---
+
+* **Project:** K-Scanner (Kernel-level Security Scanner)
+* **Author:** Jefferson Cesar Antunes
+* **License:** MIT
+* **Version:** 1.0.0
+* **Description:** Active Security Auditing & Hardening Tool for Linux Systems.
+
+---
 
 [![Linux](https://img.shields.io/badge/platform-linux-blue)](https://kernel.org)
 [![Language](https://img.shields.io/badge/language-C-blue)](https://gcc.gnu.org/)
