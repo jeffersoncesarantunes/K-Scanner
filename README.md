@@ -8,8 +8,6 @@ Lightweight Linux memory auditing tool focused on RWX detection and forensic tri
 ![Version](https://img.shields.io/badge/version-1.0.0-orange)
 ![Status](https://img.shields.io/badge/status-active-success)
 
----
-
 ## ● Project Information
 
 - **Project:** K-Scanner (Kernel-level Security Scanner)
@@ -17,8 +15,6 @@ Lightweight Linux memory auditing tool focused on RWX detection and forensic tri
 - **License:** MIT
 - **Version:** 1.0.0
 - **Description:** Active Security Auditing & Hardening Tool for Linux Systems.
-
----
 
 ## ● Contact
 
