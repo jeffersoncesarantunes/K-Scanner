@@ -1,6 +1,11 @@
 # 🐧 K-Scanner
 
 Lightweight Linux memory auditing tool focused on RWX detection and forensic triage.
+> **Project:** K-Scanner (Kernel-level Security Scanner)
+> **Author:** Jefferson Cesar Antunes
+> **License:** MIT
+> **Version:** 1.0.0
+> **Description:** Active Security Auditing & Hardening Tool for Linux Systems.
 
 [![Linux](https://img.shields.io/badge/platform-linux-blue)](https://kernel.org)
 [![Language](https://img.shields.io/badge/language-C-blue)](https://gcc.gnu.org/)
@@ -8,17 +13,11 @@ Lightweight Linux memory auditing tool focused on RWX detection and forensic tri
 ![Version](https://img.shields.io/badge/version-1.0.0-orange)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-## 🌐 Contact
+## ● Contact
 
 [![Discord](https://img.shields.io/badge/Discord-Jefferson-5865F2?logo=discord&logoColor=white)](https://discord.com/users/1476405883733807247)
 [![X](https://img.shields.io/badge/@j3ff3rsonc3sar-000000?logo=x&logoColor=white)](https://x.com/j3ff3rsonc3sar)
 [![Mastodon](https://img.shields.io/badge/Mastodon-@jeffersoncesar-6364FF?logo=mastodon&logoColor=white)](https://mastodon.social/@jeffersoncesar)
-
-> **Project:** K-Scanner (Kernel-level Security Scanner)  
-> **Author:** Jefferson Cesar Antunes  
-> **License:** MIT  
-> **Version:** 1.0.0  
-> **Description:** Active Security Auditing & Hardening Tool for Linux Systems.
 
 ## ● Etymology & Origin
 
