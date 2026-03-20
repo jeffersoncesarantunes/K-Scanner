@@ -1,4 +1,31 @@
+# ==============================================================================
+# K-Scanner - Git Ignore Configuration
+# Professional C Project & Forensic Protection
+# ==============================================================================
+
+# Build Artifacts (Compiled files)
+# ------------------------------------------------------------------------------
+# We ignore the build directory to ensure users compile locally.
 build/
+bin/
+obj/
 *.o
+*.a
+*.so
 kscanner
+
+# Forensic Dumps & Evidence
+# ------------------------------------------------------------------------------
+# Prevent accidental exposure of target memory dumps or logs
+*.bin
+*.raw
+*.dmp
+*.log
+results/
+
+# Development & OS Artifacts
+# ------------------------------------------------------------------------------
 .vscode/
+*.swp
+*~
+.DS_Store
