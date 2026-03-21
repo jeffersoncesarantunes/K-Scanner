@@ -154,6 +154,27 @@ make
 sudo ./build/kscanner
 ```
 
+## ● Repository Structure
+
+```text
+.
+├── build/              # Compiled objects and binaries (Ignored by .gitignore)
+│   └── obj/            # Modular object files (.o)
+├── docs/               # Architecture, Methodology and Threat Model
+├── examples/           # Usage guides and sample scenarios
+├── Imagens/            # K-Scanner screenshots and execution flow
+├── include/            # Header files (.h) - Interface definitions
+├── scripts/            # Automation (Build, Diagnostic and CI/CD)
+├── src/                # Core implementation (.c)
+│   ├── core/           # Main engine, Memory analyzer and Process hunter
+│   ├── modules/        # Advanced forensic features
+│   └── utils/          # Logging and memory utilities
+├── tests/              # Test cases and validation logic
+├── .gitignore          # Prevents leaking binaries and memory dumps
+├── Makefile            # Advanced build system (Automatic directory creation)
+└── README.md           # Project entry point and manual
+```
+
 ## ● Tech Stack
 
 - **Language:** C (C99)
