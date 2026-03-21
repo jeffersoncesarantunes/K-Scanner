@@ -184,11 +184,12 @@ sudo ./build/kscanner
 
 ## ● Roadmap
 
-- [x] RWX detection engine
-- [x] Structured output format
-- [ ] JSON export for SIEM integration
-- [ ] Interactive TUI interface
-- [ ] Automated memory dump for flagged PIDs
+- [x] **Modular C Engine:** High-performance RWX detection logic.
+- [x] **Advanced Build System:** POSIX-compliant Makefile with auto-directory creation.
+- [x] **Structured Output:** Clean terminal reporting for forensic triage.
+- [ ] **Automated Memory Dump:** Integrated extraction for flagged PIDs (Local `.bin` output).
+- [ ] **JSON/CSV Export:** Facilitate integration with SIEM and external auditing tools.
+- [ ] **Interactive TUI:** Terminal User Interface for live process monitoring.
 
 ## ● License
 
