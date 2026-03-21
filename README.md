@@ -157,7 +157,6 @@ sudo ./build/kscanner
 ## ● Repository Structure
 
 ```text
-.
 ├── build/              # Compiled objects and binaries (Ignored by .gitignore)
 │   └── obj/            # Modular object files (.o)
 ├── docs/               # Architecture, Methodology and Threat Model
