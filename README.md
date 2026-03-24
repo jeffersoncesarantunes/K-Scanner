@@ -164,7 +164,7 @@ git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
 
 # Build the project
-make
+make clean && make
 
 # Run the scanner (requires root privileges)
 sudo ./build/kscanner
