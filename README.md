@@ -62,16 +62,16 @@ The scanner operates through read-only metadata inspection and does not rely on 
 ## ● Example Output
 
 ```text
-┌────────┬──────────────────────────────────┬────────────────────┬────────────────────┐
-│  PID   │ PROCESS NAME                     │ STATUS             │ MEM ADDRESS        │
-├────────┼──────────────────────────────────┼────────────────────┼────────────────────┤
-│ 2327   │ xdg-desktop-por                  │ SAFE               │ 0x00000000         │
-│ 2378   │ Privileged Cont                  │ RWX ALERT          │ 38113397b000       │
-│ 2497   │ WebExtensions                    │ RWX ALERT          │ 1dcb66314000       │
-│ 2557   │ Isolated Web Co                  │ RWX ALERT          │ 3da6521ae000       │
-│ 2708   │ Web Content                      │ RWX ALERT          │ 32071f8e1000       │
-│ 3021   │ bash                             │ SAFE               │ 0x00000000         │
-└────────┴──────────────────────────────────┴────────────────────┴────────────────────┘
++--------+----------------------------------+--------------------+--------------------+
+|  PID   | PROCESS NAME                     | STATUS             | INFO / PATH        |
++--------+----------------------------------+--------------------+--------------------+
+| 2327   | xdg-desktop-por                  | SAFE               | 0x00000000         |
+| 2378   | Privileged Cont                  | RWX ALERT          | 38113397b000       |
+| 2497   | WebExtensions                    | RWX ALERT          | 1dcb66314000       |
+| 2557   | Isolated Web Co                  | RWX ALERT          | 3da6521ae000       |
+| 2708   | Web Content                      | RWX ALERT          | 32071f8e1000       |
+| 3021   | bash                             | SAFE               | 0x00000000         |
++--------+----------------------------------+--------------------+--------------------+
 ```
 
 ## ● Project in Action
@@ -142,8 +142,9 @@ hexdump -C build/dumps/pid_XXXX_XXXX.bin | head -n 20
 3. **String Extraction**
 
 Search for human-readable indicators such as URLs, IP addresses, or obfuscated commands:
-
+```bash
 strings build/dumps/pid_XXXX_XXXX.bin | less
+```
 
 ## ● Deployment
 
