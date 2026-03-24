@@ -4,10 +4,11 @@
 #include <dirent.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "colors.h"
 #include "kscanner.h"
 
-// Estrutura para armazenar dados reais de cada processo
 typedef struct {
     int pid;
     char name[33];
@@ -16,7 +17,52 @@ typedef struct {
     int is_rwx;
 } ProcessInfo;
 
-// Função interna (static) para verificar memória RWX
+static void dump_memory_region(int pid, char *addr_str) {
+    char mem_path[256], out_path[256], line[512];
+    unsigned long start, end;
+
+    snprintf(mem_path, sizeof(mem_path), "/proc/%d/maps", pid);
+    FILE *f = fopen(mem_path, "r");
+    if (!f) return;
+
+    int found = 0;
+    while (fgets(line, sizeof(line), f)) {
+        if (strstr(line, "rwxp") && strstr(line, addr_str)) {
+            if (sscanf(line, "%lx-%lx", &start, &end) == 2) {
+                found = 1;
+                break;
+            }
+        }
+    }
+    fclose(f);
+
+    if (!found) return;
+
+    size_t size = end - start;
+    void *buffer = malloc(size);
+    if (!buffer) return;
+
+    snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
+    int fd = open(mem_path, O_RDONLY);
+    if (fd == -1) {
+        free(buffer);
+        return;
+    }
+
+    if (pread(fd, buffer, size, (off_t)start) == (ssize_t)size) {
+        mkdir("build/dumps", 0755);
+        snprintf(out_path, sizeof(out_path), "build/dumps/pid_%d_%lx.bin", pid, start);
+        int out_fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (out_fd != -1) {
+            write(out_fd, buffer, size);
+            close(out_fd);
+        }
+    }
+
+    close(fd);
+    free(buffer);
+}
+
 static int check_mem_rwx(int pid, char *out_addr) {
     char path[256], line[512];
     snprintf(path, sizeof(path), "/proc/%d/maps", pid);
@@ -35,7 +81,6 @@ static int check_mem_rwx(int pid, char *out_addr) {
     return found;
 }
 
-// Função interna (static) para obter o nome do processo
 static void get_process_name(int pid, char *out_name) {
     char path[256];
     snprintf(path, sizeof(path), "/proc/%d/comm", pid);
@@ -50,7 +95,6 @@ static void get_process_name(int pid, char *out_name) {
     }
 }
 
-// Implementação da função run_scan (declarada no kscanner.h)
 int run_scan(void) {
     DIR *dir;
     struct dirent *entry;
@@ -59,7 +103,7 @@ int run_scan(void) {
     int current_page_count = 0;
 
     const char *sep_top =    "┌────────┬──────────────────────────────────┬────────────────────┬────────────────────┐";
-    const char *sep_header = "│  PID   │ PROCESS NAME                     │ STATUS             │ MEM ADDRESS        │";
+    const char *sep_header = "│  PID    │ PROCESS NAME                     │ STATUS             │ MEM ADDRESS        │";
     const char *sep_mid =    "├────────┼──────────────────────────────────┼────────────────────┼────────────────────┤";
     const char *sep_bottom = "└────────┴──────────────────────────────────┴────────────────────┴────────────────────┘";
 
@@ -95,17 +139,16 @@ int run_scan(void) {
             rwx_alerts++;
             status_color = CLR_RED;
             strcpy(status_text, "RWX ALERT");
+            dump_memory_region(pid, p_addr);
         }
 
         printf("│ %-6d │ %-32s │ %s%-18s%s │ %-18s │\n", 
                pid, p_name, status_color, status_text, CLR_RESET, p_addr);
 
-        // Paginação a cada 20 processos lidos
         if (current_page_count >= 20) {
             printf("%s\n", sep_bottom);
             printf("%s-- Press ENTER to continue scanning... --%s", CLR_YELLOW, CLR_RESET);
             
-            // Limpa o buffer e espera o Enter
             int ch;
             while ((ch = getchar()) != '\n' && ch != EOF);
             
@@ -128,7 +171,6 @@ int run_scan(void) {
     return 0;
 }
 
-// Implementação da função print_usage (exigida pelo main.c)
 void print_usage(void) {
     printf("\n%sK-Scanner Forensic Tool%s\n", CLR_BOLD, CLR_RESET);
     printf("Usage: sudo ./kscanner [OPTIONS]\n\n");

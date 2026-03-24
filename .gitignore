@@ -29,3 +29,4 @@ results/
 *.swp
 *~
 .DS_Store
+build/dumps/*.bin

@@ -51,7 +51,6 @@ It focuses strictly on observable memory metadata.
 ## ● How It Works
 
 K-Scanner parses the virtual maps of active processes:
-
 ```bash
 /proc/[PID]/maps
 ```
@@ -109,13 +108,11 @@ K-Scanner is built for stability and forensic neutrality:
 After detecting an RWX region, analysts may proceed with:
 
 1. **Binary Validation**
-
 ```bash
 sha256sum /proc/[PID]/exe
 ```
 
 2. **Advanced Memory Extraction**
-
 ```bash
 sudo dd if=/proc/[PID]/mem of=dump.bin bs=1 skip=<offset> count=<size>
 ```
@@ -123,6 +120,30 @@ sudo dd if=/proc/[PID]/mem of=dump.bin bs=1 skip=<offset> count=<size>
 3. **Artifact Inspection**
 
 Use `strings` or `hexdump` on the generated dump to identify suspicious payloads.
+
+## ● Post-Analysis of Forensic Dumps
+
+Once **K-Scanner** identifies a suspicious **RWX** region, it automatically extracts its raw content to the `build/dumps/` directory. These artifacts are essential for offline forensic investigation.
+
+#### 1. Integrity Verification (Hashing)
+
+To ensure the forensic evidence hasn't been tampered with and to maintain a chain of custody, generate a SHA-256 hash:
+```bash
+sha256sum build/dumps/pid_XXXX_XXXX.bin
+```
+
+2. **Hexadecimal Inspection**
+
+To identify instruction patterns, headers, or NOP sleds, use a hex dumper:
+```bash
+hexdump -C build/dumps/pid_XXXX_XXXX.bin | head -n 20
+```
+
+3. **String Extraction**
+
+Search for human-readable indicators such as URLs, IP addresses, or obfuscated commands:
+
+strings build/dumps/pid_XXXX_XXXX.bin | less
 
 ## ● Deployment
 
@@ -180,7 +201,7 @@ sudo ./build/kscanner
 - [x] **Modular C Engine:** High-performance RWX detection logic.
 - [x] **Advanced Build System:** POSIX-compliant Makefile with auto-directory creation.
 - [x] **Structured Output:** Clean terminal reporting for forensic triage.
-- [ ] **Automated Memory Dump:** Integrated extraction for flagged PIDs (Local `.bin` output).
+- [x] **Automated Memory Dump:** Integrated extraction for flagged PIDs (Local `.bin` output).
 - [ ] **JSON/CSV Export:** Facilitate integration with SIEM and external auditing tools.
 - [ ] **Interactive TUI:** Terminal User Interface for live process monitoring.
 
