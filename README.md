@@ -77,13 +77,13 @@ The scanner operates through read-only metadata inspection and does not rely on 
 ## ● Project in Action
 
 ![Initial Scan](./Imagens/kscanner1.png)
-*1- Automated baseline evaluation of global memory posture.*
+*1- Initial System Mapping. Startup of the Live Forensic Process Analysis Mode, performing real-time memory scanning of core system processes.*
 
 ![RWX Detection](./Imagens/kscanner2.png)
-*2- Real-time detection of memory regions violating W^X principles.*
+*2- Behavioral Analysis & RWX Detection. Identification of suspicious memory regions. The tool successfully flags processes with Read-Write-Execute permissions, providing the specific memory offset for forensic investigation.*
 
 ![Forensic Summary](./Imagens/kscanner3.png)
-*3- Forensic audit reporting and risk assessment for flagged PIDs.*
+*3- Summary & Integrity Verification. Final scan report showing the total count of safe vs. alerted processes. On the right, the SHA256 checksum ensures the forensic integrity of the generated memory dump.*
 
 ## ● Features
 
@@ -127,23 +127,29 @@ Once **K-Scanner** identifies a suspicious **RWX** region, it automatically extr
 
 #### 1. Integrity Verification (Hashing)
 
-To ensure the forensic evidence hasn't been tampered with and to maintain a chain of custody, generate a SHA-256 hash:
+As you are already in the `build/` directory from the previous step:
+
 ```bash
-sha256sum build/dumps/pid_XXXX_XXXX.bin
+sha256sum dumps/*.bin
 ```
 
-2. **Hexadecimal Inspection**
-
-To identify instruction patterns, headers, or NOP sleds, use a hex dumper:
+### 2. Example for a specific dump (as seen in screenshots)
 ```bash
-hexdump -C build/dumps/pid_XXXX_XXXX.bin | head -n 20
+sha256sum dumps/memory_dump.bin
 ```
 
-3. **String Extraction**
+#### 3. String Extraction
 
-Search for human-readable indicators such as URLs, IP addresses, or obfuscated commands:
+The scanner automatically names dumps using the Process ID (PID). Search for human-readable indicators such as URLs, IP addresses, or obfuscated commands:
+
+# Example using a generic PID dump:
 ```bash
-strings build/dumps/pid_XXXX_XXXX.bin | less
+strings dumps/pid_*.bin | less
+```
+
+# Example using the dump shown in the screenshots:
+```bash
+strings dumps/memory_dump.bin | less
 ```
 
 ## ● Deployment
@@ -157,17 +163,20 @@ strings build/dumps/pid_XXXX_XXXX.bin | less
 ## ● Build and Run
 
 ```bash
-# Clone the repository
+# 1. Clone & Enter the repository
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
-
-# Enter the project directory
 cd K-Scanner
 
-# Build the project
+# 2. Compile the project
+# This will create the 'build/' directory and all objects
 make clean && make
 
-# Run the scanner (requires root privileges)
-sudo ./build/kscanner
+# 3. Enter the build directory
+cd build/
+
+# 4. Execute the scanner
+# From inside the build/ folder, run the binary as root
+sudo ./kscanner
 ```
 
 ## ● Repository Structure
@@ -205,6 +214,7 @@ sudo ./build/kscanner
 - [x] **Automated Memory Dump:** Integrated extraction for flagged PIDs (Local `.bin` output).
 - [ ] **JSON/CSV Export:** Facilitate integration with SIEM and external auditing tools.
 - [ ] **Interactive TUI:** Terminal User Interface for live process monitoring.
+- [ ] **Kernel Module Support:** For deeper memory inspection (Future research).
 
 ## ● License
 
