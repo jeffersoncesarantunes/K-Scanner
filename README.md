@@ -179,8 +179,10 @@ sudo ./bin/kscanner
 ## ● Repository Structure
 
 ```text
-├── build/              # Compiled objects and binaries (Ignored by .gitignore)
-│   └── obj/            # Modular object files (.o)
+├── bin/                # Target binary directory (kscanner)
+├── build/              # Intermediate objects and forensic dumps
+│   ├── obj/            # Modular object files (.o)
+│   └── dumps/          # Memory analysis snapshots (.bin)
 ├── docs/               # Architecture, Methodology and Threat Model
 ├── examples/           # Usage guides and sample scenarios
 ├── Imagens/            # K-Scanner screenshots and execution flow
