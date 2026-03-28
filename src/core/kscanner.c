@@ -8,14 +8,8 @@
 #include <sys/stat.h>
 #include "colors.h"
 #include "kscanner.h"
-
-typedef struct {
-    int pid;
-    char name[33];
-    char status[20];
-    char address[18];
-    int is_rwx;
-} ProcessInfo;
+#include "forensic_core.h"
+#include "logger.h"
 
 static void dump_memory_region(int pid, char *addr_str) {
     char mem_path[256], out_path[256], line[512];
@@ -102,16 +96,9 @@ int run_scan(void) {
     int rwx_alerts = 0;
     int current_page_count = 0;
 
-    const char *sep_top =    "┌────────┬──────────────────────────────────┬────────────────────┬────────────────────┐";
-    const char *sep_header = "│  PID    │ PROCESS NAME                     │ STATUS             │ MEM ADDRESS        │";
-    const char *sep_mid =    "├────────┼──────────────────────────────────┼────────────────────┼────────────────────┤";
-    const char *sep_bottom = "└────────┴──────────────────────────────────┴────────────────────┴────────────────────┘";
-
     printf("\n%s[+] Initializing real-time forensic memory scan...%s\n\n", CLR_GREEN, CLR_RESET);
     
-    printf("%s\n", sep_top);
-    printf("%s\n", sep_header);
-    printf("%s\n", sep_mid);
+    print_table_header();
 
     dir = opendir("/proc");
     if (!dir) {
@@ -123,51 +110,39 @@ int run_scan(void) {
         if (!isdigit(entry->d_name[0])) continue;
 
         int pid = atoi(entry->d_name);
-        char p_name[33];
-        char p_addr[18] = "0x00000000";
+        forensic_process_t proc;
         
-        get_process_name(pid, p_name);
-        int is_rwx = check_mem_rwx(pid, p_addr);
+        proc.pid = pid;
+        get_process_name(pid, proc.name);
+        
+        // Note: Usando 'exe_path' para armazenar o endereço, conforme o padrão do seu struct
+        proc.memory_rwx = check_mem_rwx(pid, proc.exe_path);
 
         total_processes++;
         current_page_count++;
 
-        const char* status_color = CLR_RESET;
-        char status_text[20] = "SAFE";
-
-        if (is_rwx) {
+        if (proc.memory_rwx) {
             rwx_alerts++;
-            status_color = CLR_RED;
-            strcpy(status_text, "RWX ALERT");
-            dump_memory_region(pid, p_addr);
+            dump_memory_region(pid, proc.exe_path);
         }
 
-        printf("│ %-6d │ %-32s │ %s%-18s%s │ %-18s │\n", 
-               pid, p_name, status_color, status_text, CLR_RESET, p_addr);
+        print_process_row(&proc);
 
         if (current_page_count >= 20) {
-            printf("%s\n", sep_bottom);
+            print_table_footer();
             printf("%s-- Press ENTER to continue scanning... --%s", CLR_YELLOW, CLR_RESET);
             
             int ch;
             while ((ch = getchar()) != '\n' && ch != EOF);
             
-            printf("\n%s\n", sep_top);
-            printf("%s\n", sep_header);
-            printf("%s\n", sep_mid);
+            print_table_header();
             current_page_count = 0;
         }
     }
     closedir(dir);
 
-    printf("%s\n", sep_bottom);
-
-    printf("\n%s[ ANALYSIS SUMMARY ]%s\n", CLR_BOLD, CLR_RESET);
-    printf("📊 Total Scanned: %d | %s🔴 RWX Alerts: %d%s | %s🟢 Clean: %d%s\n", 
-           total_processes, CLR_RED, rwx_alerts, CLR_RESET, 
-           CLR_GREEN, total_processes - rwx_alerts, CLR_RESET);
+    print_scan_summary(total_processes, rwx_alerts, total_processes - rwx_alerts);
     
-    printf("\n%s[+] Scan completed. Forensic integrity verified.%s\n", CLR_CYAN, CLR_RESET);
     return 0;
 }
 
