@@ -168,15 +168,12 @@ git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
 
 # 2. Compile the project
-# This will create the 'build/' directory and all objects
+# This will create 'bin/' for the executable and 'build/' for objects
 make clean && make
 
-# 3. Enter the build directory
-cd build/
-
-# 4. Execute the scanner
-# From inside the build/ folder, run the binary as root
-sudo ./kscanner
+# 3. Execute the scanner
+# Run the binary from the root directory as root
+sudo ./bin/kscanner
 ```
 
 ## ● Repository Structure
