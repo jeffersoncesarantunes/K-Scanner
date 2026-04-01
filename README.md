@@ -142,12 +142,12 @@ sha256sum dumps/memory_dump.bin
 
 The scanner automatically names dumps using the Process ID (PID). Search for human-readable indicators such as URLs, IP addresses, or obfuscated commands:
 
-# Example using a generic PID dump:
+## ● Example using a generic PID dump:
 ```bash
 strings dumps/pid_*.bin | less
 ```
 
-# Example using the dump shown in the screenshots:
+## ● Example using the dump shown in the screenshots:
 ```bash
 strings dumps/memory_dump.bin | less
 ```
@@ -207,13 +207,13 @@ sudo ./bin/kscanner
 
 ## ● Roadmap
 
-- [x] **Modular C Engine:** High-performance RWX detection logic using `/proc/[pid]/maps` parsing.
-- [x] **Advanced Build System:** POSIX-compliant Makefile with auto-directory management and optimized flags (`-O2`, `-Wall`).
-- [x] **Structured Output:** Professional CLI interface with forensic triage reporting, color-coded alerts, and pagination.
-- [x] **Automated Memory Dump:** Integrated extraction of suspicious RWX regions into local `.bin` files for post-analysis.
-- [ ] **JSON/CSV Export:** Implementation of export flags (e.g., `--json`) to facilitate integration with SIEM (Elastic, Splunk) and auditing tools.
-- [ ] **Interactive TUI:** Development of a Terminal User Interface (using Ncurses) for real-time process monitoring and sorting.
-- [ ] **Kernel Module Support:** Research and implementation of a dedicated LKM (Linux Kernel Module) for deep memory inspection and anti-rootkit features.
+- [x] **Modular C Engine:** RWX detection via `/proc/[pid]/maps`.
+- [x] **Advanced Build System:** Optimized POSIX-compliant Makefile.
+- [x] **Structured Output:** Color-coded CLI with forensic triage.
+- [x] **Automated Memory Dump:** Native extraction to `.bin` files.
+- [ ] **JSON/CSV Export:** Integration with SIEM/Auditing tools.
+- [ ] **Interactive TUI:** Real-time monitoring via Ncurses.
+- [ ] **Kernel Module:** Deep inspection and anti-rootkit (LKM).
 
 ## ● License
 
