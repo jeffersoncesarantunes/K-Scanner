@@ -207,13 +207,13 @@ sudo ./bin/kscanner
 
 ## ● Roadmap
 
-- [x] **Modular C Engine:** High-performance RWX detection logic.
-- [x] **Advanced Build System:** POSIX-compliant Makefile with auto-directory creation.
-- [x] **Structured Output:** Clean terminal reporting for forensic triage.
-- [x] **Automated Memory Dump:** Integrated extraction for flagged PIDs (Local `.bin` output).
-- [ ] **JSON/CSV Export:** Facilitate integration with SIEM and external auditing tools.
-- [ ] **Interactive TUI:** Terminal User Interface for live process monitoring.
-- [ ] **Kernel Module Support:** For deeper memory inspection (Future research).
+- [x] **Modular C Engine:** High-performance RWX detection logic using `/proc/[pid]/maps` parsing.
+- [x] **Advanced Build System:** POSIX-compliant Makefile with auto-directory management and optimized flags (`-O2`, `-Wall`).
+- [x] **Structured Output:** Professional CLI interface with forensic triage reporting, color-coded alerts, and pagination.
+- [x] **Automated Memory Dump:** Integrated extraction of suspicious RWX regions into local `.bin` files for post-analysis.
+- [ ] **JSON/CSV Export:** Implementation of export flags (e.g., `--json`) to facilitate integration with SIEM (Elastic, Splunk) and auditing tools.
+- [ ] **Interactive TUI:** Development of a Terminal User Interface (using Ncurses) for real-time process monitoring and sorting.
+- [ ] **Kernel Module Support:** Research and implementation of a dedicated LKM (Linux Kernel Module) for deep memory inspection and anti-rootkit features.
 
 ## ● License
 
