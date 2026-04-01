@@ -11,6 +11,27 @@
 #include "forensic_core.h"
 #include "logger.h"
 
+static const char* map_context_tag(const char* path, int* is_suspicious) {
+    *is_suspicious = 0;
+    if (path == NULL || strlen(path) == 0 || strcmp(path, "[Anonymous/Heap]") == 0) {
+        *is_suspicious = 1;
+        return "ANON_BLOB";
+    }
+    if (strstr(path, "js-executable")) return "JIT_ENGINE";
+    if (strstr(path, "heap") || strstr(path, "[heap]")) return "DYNAMIC_MEM";
+    if (strstr(path, "stack") || strstr(path, "[stack]")) {
+        *is_suspicious = 1;
+        return "PROC_STACK";
+    }
+    if (strstr(path, "/usr/lib") || strstr(path, ".so")) return "SYSTEM_LIB";
+    if (strstr(path, "/tmp") || strstr(path, "/dev/shm")) {
+        *is_suspicious = 1;
+        return "VOLATILE_FS";
+    }
+    
+    return "MAPPED_FILE";
+}
+
 static void dump_memory_region(int pid, char *addr_str) {
     char mem_path[256], out_path[256], line[512];
     unsigned long start, end;
@@ -57,22 +78,41 @@ static void dump_memory_region(int pid, char *addr_str) {
     free(buffer);
 }
 
-static int check_mem_rwx(int pid, char *out_addr) {
+static int check_mem_rwx(int pid, char *out_info) {
     char path[256], line[512];
+    char addr[64], perms[8], pathname[256];
+    int found_count = 0;
+    char raw_origin[256] = "";
+
     snprintf(path, sizeof(path), "/proc/%d/maps", pid);
     FILE *f = fopen(path, "r");
     if (!f) return 0;
 
-    int found = 0;
     while (fgets(line, sizeof(line), f)) {
         if (strstr(line, "rwxp")) {
-            sscanf(line, "%17[^ -]", out_addr);
-            found = 1;
-            break; 
+            pathname[0] = '\0';
+            sscanf(line, "%63s %7s %*s %*s %*s %255s", addr, perms, pathname);
+            
+            if (found_count == 0) {
+                strncpy(raw_origin, pathname, sizeof(raw_origin));
+                char start_addr_hex[18];
+                sscanf(addr, "%17[^ -]", start_addr_hex);
+                dump_memory_region(pid, start_addr_hex);
+            }
+            found_count++;
         }
     }
     fclose(f);
-    return found;
+
+    if (found_count > 0) {
+        int is_suspicious = 0;
+        const char* tag = map_context_tag(raw_origin, &is_suspicious);
+        snprintf(out_info, 128, "%02dx %s", found_count, tag);
+    } else {
+        strcpy(out_info, "STABLE");
+    }
+
+    return found_count;
 }
 
 static void get_process_name(int pid, char *out_name) {
@@ -115,15 +155,16 @@ int run_scan(void) {
         proc.pid = pid;
         get_process_name(pid, proc.name);
         
-        // Note: Usando 'exe_path' para armazenar o endereço, conforme o padrão do seu struct
-        proc.memory_rwx = check_mem_rwx(pid, proc.exe_path);
+        char rwx_details[128];
+        int violations = check_mem_rwx(pid, rwx_details);
+        proc.memory_rwx = violations;
+        snprintf(proc.exe_path, sizeof(proc.exe_path), "%s", rwx_details);
 
         total_processes++;
         current_page_count++;
 
-        if (proc.memory_rwx) {
+        if (violations > 0) {
             rwx_alerts++;
-            dump_memory_region(pid, proc.exe_path);
         }
 
         print_process_row(&proc);
