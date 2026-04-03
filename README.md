@@ -65,12 +65,9 @@ The scanner operates through read-only metadata inspection and does not rely on 
 +--------+----------------------------------+--------------------+--------------------+
 |  PID   | PROCESS NAME                     | STATUS             | INFO / PATH        |
 +--------+----------------------------------+--------------------+--------------------+
-| 2327   | xdg-desktop-por                  | SAFE               | 0x00000000         |
-| 2378   | Privileged Cont                  | RWX ALERT          | 38113397b000       |
-| 2497   | WebExtensions                    | RWX ALERT          | 1dcb66314000       |
-| 2557   | Isolated Web Co                  | RWX ALERT          | 3da6521ae000       |
-| 2708   | Web Content                      | RWX ALERT          | 32071f8e1000       |
-| 3021   | bash                             | SAFE               | 0x00000000         |
+| 102109 | wireshark                        | RWX ALERT          | 01x ANON_BLOB      |
+| 102174 | Discord                          | RWX ALERT          | 02x MAPPED_FILE    |
+| 102388 | Discord                          | RWX ALERT          | 05x MAPPED_FILE    |
 +--------+----------------------------------+--------------------+--------------------+
 ```
 
@@ -80,10 +77,10 @@ The scanner operates through read-only metadata inspection and does not rely on 
 *1- Initial System Mapping. Startup of the Live Forensic Process Analysis Mode, performing real-time memory scanning of core system processes.*
 
 ![RWX Detection](./Imagens/kscanner2.png)
-*2- Behavioral Analysis & RWX Detection. Identification of suspicious memory regions. The tool successfully flags processes with Read-Write-Execute permissions, providing the specific memory offset for forensic investigation.*
+*2- Behavioral Analysis & Contextual Detection. O K-Scanner agora categoriza regiões suspeitas como ANON_BLOB (comum em shellcodes) ou MAPPED_FILE (comum em motores JIT como Firefox/Discord).*
 
 ![Forensic Summary](./Imagens/kscanner3.png)
-*3- Summary & Integrity Verification. Final scan report showing the total count of safe vs. alerted processes. On the right, the SHA256 checksum ensures the forensic integrity of the generated memory dump.*
+*3- Forensic Workflow via Tmux. Demonstração da extração de memória, verificação de integridade com SHA256 e inspeção de strings/hexadecimal para análise de payloads.*
 
 ## ● Features
 
@@ -126,30 +123,32 @@ Use `strings` or `hexdump` on the generated dump to identify suspicious payloads
 Once **K-Scanner** identifies a suspicious **RWX** region, it automatically extracts its raw content to the `build/dumps/` directory. These artifacts are essential for offline forensic investigation.
 
 #### 1. Integrity Verification (Hashing)
-
-As you are already in the `build/` directory from the previous step:
-
 ```bash
 sha256sum dumps/*.bin
 ```
 
 ### 2. Example for a specific dump (as seen in screenshots)
 ```bash
-sha256sum dumps/memory_dump.bin
+sha256sum dumps/pid_101554_2dace8f1b000.bin
 ```
 
 #### 3. String Extraction
 
-The scanner automatically names dumps using the Process ID (PID). Search for human-readable indicators such as URLs, IP addresses, or obfuscated commands:
+Search for human-readable indicators such as URLs, IP addresses, or obfuscated commands:
 
-## ● Example using a generic PID dump:
+## ● General search for all dumps
 ```bash
 strings dumps/pid_*.bin | less
 ```
 
-## ● Example using the dump shown in the screenshots:
+## ● Targeted search on the alerted process dump from the example
 ```bash
-strings dumps/memory_dump.bin | less
+strings dumps/pid_101554_2dace8f1b000.bin | head -n 15
+```
+
+## ● Hexadecimal Analysis
+```bash 
+hexdump -C dumps/pid_101554_2dace8f1b000.bin | head -n 10
 ```
 
 ## ● Deployment
