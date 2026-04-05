@@ -5,18 +5,7 @@ Lightweight Linux memory auditing tool focused on RWX detection and forensic tri
 [![Platform-Linux](https://img.shields.io/badge/Platform-Linux-1793D1?style=flat-square&logo=linux&logoColor=white)](https://kernel.org)
 [![Language-C99](https://img.shields.io/badge/Language-C99-A8B9CC?style=flat-square&logo=c&logoColor=white)](https://gcc.gnu.org/)
 [![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square&logo=license&logoColor=white)](LICENSE)
-![Version](https://img.shields.io/badge/Version-1.0.0-333333?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Active-00FF41?style=flat-square)
-
----
-
-## ● Project Information
-
-- **Project:** K-Scanner (Kernel-level Security Scanner)
-- **Author:** Jefferson Cesar Antunes
-- **License:** MIT
-- **Version:** 1.0.0
-- **Description:** Active Security Auditing & Hardening Tool for Linux Systems.
 
 ---
 
@@ -250,6 +239,16 @@ sudo ./bin/kscanner
 
 ---
 
+## ● Documentation
+
+[![Docs-Architecture](https://img.shields.io/badge/Architecture-Design-00599C?style=flat-square&logo=linux&logoColor=white)](./docs/architecture.md)
+[![Docs-Methodology](https://img.shields.io/badge/Forensic-Methodology-444444?style=flat-square&logo=gnu-bash&logoColor=white)](./docs/forensic_methodology.md)
+[![Docs-ThreatModel](https://img.shields.io/badge/Threat-Model-CC0000?style=flat-square&logo=opensourceinitiative&logoColor=white)](./docs/threat_model.md)
+[![Docs-Performance](https://img.shields.io/badge/Performance-Limits-8A2BE2?style=flat-square)](./docs/performance_and_limitations.md)
+[![Docs-UseCases](https://img.shields.io/badge/Use-Cases-228B22?style=flat-square)](./docs/use_cases.md)
+
 ## ● License
 
-Distributed under the MIT License. See LICENSE for details.
+[![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square&logo=opensourceinitiative&logoColor=white)](./LICENSE)
+
+*This project is licensed under the MIT License.*
