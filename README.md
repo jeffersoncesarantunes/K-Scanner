@@ -112,6 +112,22 @@ K-Scanner is built for stability and forensic neutrality:
 
 ---
 
+## ● Build and Run
+
+```bash
+# 1. Clone & Enter the repository
+git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
+cd K-Scanner
+
+# 2. Compile the project
+make clean && make
+
+# 3. Execute the scanner
+sudo ./bin/kscanner
+```
+
+---
+
 ## ● Investigation Workflow
 
 After detecting an RWX region, analysts may proceed with:
@@ -141,31 +157,31 @@ Once **K-Scanner** identifies a suspicious **RWX** region, it automatically extr
 ### 1. Integrity Verification (Hashing)
 
 ```bash
-sha256sum dumps/*.bin
+sha256sum build/dumps/*.bin
 ```
 
 ### 2. Example for a specific dump
 
 ```bash
-sha256sum dumps/pid_101554_2dace8f1b000.bin
+sha256sum build/dumps/pid_101554_2dace8f1b000.bin
 ```
 
 ### 3. String Extraction
 
 ```bash
-strings dumps/pid_*.bin | less
+strings build/dumps/pid_*.bin | less
 ```
 
 ### Targeted example
 
 ```bash
-strings dumps/pid_101554_2dace8f1b000.bin | head -n 15
+strings build/dumps/pid_101554_2dace8f1b000.bin | head -n 15
 ```
 
 ### 4. Hexadecimal Analysis
 
 ```bash
-hexdump -C dumps/pid_101554_2dace8f1b000.bin | head -n 10
+hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
 ```
 
 ---
@@ -177,22 +193,6 @@ hexdump -C dumps/pid_101554_2dace8f1b000.bin | head -n 10
 - Linux OS (Tested on Arch Linux 6.x)
 - gcc & make
 - sudo privileges
-
----
-
-## ● Build and Run
-
-```bash
-# 1. Clone & Enter the repository
-git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
-cd K-Scanner
-
-# 2. Compile the project
-make clean && make
-
-# 3. Execute the scanner
-sudo ./bin/kscanner
-```
 
 ---
 
