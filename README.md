@@ -204,6 +204,11 @@ hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
 │   ├── obj/
 │   └── dumps/
 ├── docs/
+│   ├── architecture.md
+│   ├── forensic_methodology.md
+│   ├── performance_and_limitations.md
+│   ├── threat_model.md
+│   └── use_cases.md
 ├── examples/
 ├── Imagens/
 ├── include/
@@ -214,6 +219,7 @@ hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
 │   └── utils/
 ├── tests/
 ├── .gitignore
+├── LICENSE
 ├── Makefile
 └── README.md
 ```
