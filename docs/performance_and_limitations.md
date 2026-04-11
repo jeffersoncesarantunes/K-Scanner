@@ -1,4 +1,4 @@
-## ●  Performance and Limitations
+#  ●  Performance and Limitations
 
 ## 1. Design Philosophy
 
