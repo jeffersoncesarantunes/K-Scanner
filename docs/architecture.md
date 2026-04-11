@@ -1,4 +1,4 @@
-## ● K-Scanner Architecture & API Reference
+#  ● K-Scanner Architecture & API Reference
 
 ## 1. Overview
 K-Scanner is a high-performance live forensic tool designed to analyze running processes via the `/proc` virtual filesystem. It is built to be non-intrusive, prioritizing system stability while maintaining deep visibility into process memory permissions.

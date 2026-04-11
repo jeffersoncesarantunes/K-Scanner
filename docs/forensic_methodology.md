@@ -1,4 +1,4 @@
-## ● Forensic Methodology
+#  ● Forensic Methodology
 
 ## ● RWX Detection Theory
 In modern computing, the **W^X (Write XOR Execute)** security policy ensures that memory pages are either writable or executable, but never both. K-Scanner is designed to detect violations of this principle.
