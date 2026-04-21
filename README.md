@@ -51,19 +51,17 @@ It focuses strictly on observable memory metadata.
 
 ## ● How It Works
 
-K-Scanner parses the virtual maps of active processes:
+K-Scanner parses the virtual maps of active processes via `/proc/[PID]/maps`. It triggers an **RWX ALERT** whenever a memory segment possesses Write (W) and Execute (X) permissions simultaneously.
 
-```bash
-/proc/[PID]/maps
-```
+### Understanding RWX Alerts
+Not all alerts indicate malicious activity. It is important to distinguish between technical detection and actual threats:
 
-For each running process, it inspects memory segments and evaluates their permission flags. If a memory segment contains both **Write (W)** and **Execute (X)** permissions simultaneously, an RWX alert is triggered.
-
-The scanner operates through read-only metadata inspection and does not rely on intrusive debugging mechanisms such as `ptrace`.
-
----
+* **JIT Engines (False Positives):** Modern software like Firefox, Discord, and Python use **Just-In-Time (JIT)** compilation. These engines must write code to memory and execute it immediately, requiring RWX flags. In these cases, the alert is a **True Positive** (the flag exists) but a **Security False Positive** (it is expected behavior).
+* **Suspicious Regions:** RWX regions in processes that typically do not use JIT, or regions marked as `ANON_BLOB`, should be prioritized for forensic extraction and analysis.
 
 ## ● Example Output
+
+---
 
 ```text
 +--------+----------------------------------+--------------------+--------------------+
