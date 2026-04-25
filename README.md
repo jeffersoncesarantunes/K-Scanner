@@ -1,126 +1,131 @@
 # 🐧 K-Scanner
 
-Lightweight Linux memory auditing tool focused on RWX detection and forensic triage.
+Lightweight Linux memory auditing tool focused on RWX detection and automated forensic triage.
 
 [![Platform-Linux](https://img.shields.io/badge/Platform-Linux-1793D1?style=flat-square&logo=linux&logoColor=white)](https://kernel.org)
 [![Language-C99](https://img.shields.io/badge/Language-C99-A8B9CC?style=flat-square&logo=c&logoColor=white)](https://gcc.gnu.org/)
 [![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square&logo=license&logoColor=white)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Active-00FF41?style=flat-square)](#-roadmap)
 [![Tested-on](https://img.shields.io/badge/Tested%20on-Arch%20Linux-1793D1?style=flat-square&logo=arch-linux)](https://security.archlinux.org/)
-[![Domain](https://img.shields.io/badge/Domain-Memory%20Forensics-8A2BE2?style=flat-square)](./docs/forensic_methodology.md)
+[![Domain](https://img.shields.io/badge/Domain-Live%20Memory%20Forensics-8A2BE2?style=flat-square)](./docs/forensic_methodology.md)
 
 ---
 
 ## ● Etymology & Origin
 
-The name **K-Scanner** was born from the project's focus on the **Kernel** (the heart of the Linux Operating System).
+The name **K-Scanner** originates from the Linux **Kernel** — the core layer responsible for process execution, memory management, and system security.
 
-The "K" symbolizes the tool's mission to dive deep into system-level configurations, permissions, and sensitive files. It acts as a sentinel, scanning the "foundations" (Kernel-space and System-space) to ensure that the base of the OS is hardened against potential threats.
+The "K" reflects the project's mission: to inspect volatile memory at runtime, identify anomalous execution permissions, and transform low-level kernel metadata into actionable forensic intelligence.
 
 ---
 
 ## ● Overview
 
-K-Scanner is a minimal forensic utility designed to audit memory protection flags of active Linux processes.
+K-Scanner is a lightweight forensic utility designed to inspect active Linux processes for memory regions that violate the **W^X (Write XOR Execute)** security principle.
 
-It analyzes the `/proc` virtual filesystem to identify memory regions that violate the W^X (Write XOR Execute) security principle — a condition commonly associated with:
+Built in pure **C99**, it combines a high-performance scanning engine with an interactive **ncurses-based Brutalist TUI**, enabling real-time process navigation, RWX detection, and immediate forensic extraction.
+
+Common RWX scenarios include:
 
 - Shellcode injection
-- JIT-compiled regions
-- Packed executables
-- Fileless malware techniques
-
-The project is written in pure C (C99) with emphasis on performance, clarity, and forensic integrity.
+- Reflective payload loading
+- Fileless malware execution
+- JIT-compiled engines (Firefox, Python, Node.js, Discord)
 
 ---
 
 ## ● Why
 
-Modern Linux systems rely heavily on memory protection mechanisms. However, visibility into runtime RWX memory regions is not centralized.
+Modern Linux systems generate enormous runtime activity, but visibility into executable writable memory remains fragmented.
 
-K-Scanner provides:
+K-Scanner centralizes this analysis by providing:
 
 - Deterministic RWX detection
-- System-wide process inspection
-- Live forensic triage support
-- Lightweight incident response tooling
+- Interactive live process inspection
+- Automated forensic evidence collection
+- Immediate post-dump triage artifacts
+- Minimal operational overhead
 
-It focuses strictly on observable memory metadata.
+It transforms raw `/proc` telemetry into incident-response-ready intelligence.
 
 ---
 
 ## ● How It Works
 
-K-Scanner parses the virtual maps of active processes via `/proc/[PID]/maps`. It triggers an **RWX ALERT** whenever a memory segment possesses Write (W) and Execute (X) permissions simultaneously.
+K-Scanner continuously parses `/proc/[PID]/maps` to identify writable and executable memory mappings.
+
+Whenever a region exposes simultaneous **Write (W)** and **Execute (X)** permissions, the scanner raises an **RWX ALERT**.
 
 ### Understanding RWX Alerts
-Not all alerts indicate malicious activity. It is important to distinguish between technical detection and actual threats:
 
-* **JIT Engines (False Positives):** Modern software like Firefox, Discord, and Python use **Just-In-Time (JIT)** compilation. These engines must write code to memory and execute it immediately, requiring RWX flags. In these cases, the alert is a **True Positive** (the flag exists) but a **Security False Positive** (it is expected behavior).
-* **Suspicious Regions:** RWX regions in processes that typically do not use JIT, or regions marked as `ANON_BLOB`, should be prioritized for forensic extraction and analysis.
+Not every RWX region is malicious. Context matters.
 
-## ● Example Output
+- **Expected JIT Behavior:** Browsers, Python interpreters, Node.js, and Electron applications often allocate RWX pages for Just-In-Time compilation.
+- **Suspicious Activity:** Anonymous executable pages, shellcode-like blobs, or RWX mappings in non-JIT processes deserve immediate investigation.
+- **Forensic Priority:** Regions marked as anonymous or unexpected should be dumped and analyzed first.
 
 ---
 
+## ● Example Output
+
 ```text
-+--------+----------------------------------+--------------------+--------------------+
-|  PID   | PROCESS NAME                     | STATUS             | INFO / PATH        |
-+--------+----------------------------------+--------------------+--------------------+
-| 102109 | wireshark                        | RWX ALERT          | 01x ANON_BLOB      |
-| 102174 | Discord                          | RWX ALERT          | 02x MAPPED_FILE    |
-| 102388 | Discord                          | RWX ALERT          | 05x MAPPED_FILE    |
-+--------+----------------------------------+--------------------+--------------------+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 🐧 K-Scanner | Live Forensic Process Analysis Mode                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+ PID    PROCESS              STATUS      MAP_ADDR
+ 1132   python3              RWX ALERT   7fc163862000
+ 1135   fail2ban-server      RWX ALERT   7f59a964f000
+ 1426   Xorg                 SAFE        n/a
+
+ [ENTER] ANALYZE | [Q] EXIT | ALERTS: 12
 ```
 
 ---
 
 ## ● Project in Action
 
-![Initial Scan](./Imagens/kscanner1.png)  
-*1 - Initial System Mapping. Startup of the Live Forensic Process Analysis Mode, performing real-time memory scanning of core system processes.*
+![Live Scan](./Imagens/kscanner1.png)
+*1 - Live process enumeration using the Brutalist ncurses interface.*
 
-![RWX Detection](./Imagens/kscanner2.png)  
-*2 - Behavioral Analysis & Contextual Detection. K-Scanner categorizes suspicious regions as ANON_BLOB (common in shellcodes) or MAPPED_FILE (common in JIT engines like Firefox/Discord).*
+![RWX Detection](./Imagens/kscanner2.png)
+*2 - Real-time detection of executable writable memory regions.*
 
-![Forensic Summary](./Imagens/kscanner3.png)  
-*3 - Forensic Workflow via Tmux. Demonstrates memory extraction, integrity verification with SHA256, and inspection via strings/hex.*
+![Forensic Extraction](./Imagens/kscanner3.png)
+*3 - Automated dump generation, hashing, strings extraction, and hexadecimal preview.*
 
 ---
 
 ## ● Features
 
-- System-wide PID scanning
-- RWX memory detection engine
-- SAFE / ALERT classification
-- Clean terminal output
-- Low memory footprint
-- Designed for forensic triage scenarios
+* Interactive ncurses-based TUI
+* Real-time RWX memory detection
+* One-key forensic extraction
+* Automatic SHA256 integrity hashing
+* Automatic strings report generation
+* Automatic hexadecimal preview generation
+* SAFE / RWX ALERT classification
+* Low-overhead live analysis
 
 ---
 
 ## ● Operational Integrity
 
-K-Scanner is built for stability and forensic neutrality:
+K-Scanner is designed for forensic stability and safe live-response operations:
 
-1. **Simplicity:** No kernel modules, no injection, no process suspension  
-2. **Forensic Integrity:** Does not modify process memory or execution state  
-3. **Performance:** Optimized C implementation for minimal overhead  
-4. **Passive Inspection:** Uses read-only metadata via /proc  
+1. **Passive Analysis:** Reads metadata directly from `/proc`
+2. **No Injection:** Never modifies target processes
+3. **Controlled Extraction:** Prevents unstable full-memory dumping
+4. **Evidence Integrity:** Automatically hashes every extracted artifact
 
 ---
 
 ## ● Build and Run
 
 ```bash
-# 1. Clone & Enter the repository
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
-
-# 2. Compile the project
 make clean && make
-
-# 3. Execute the scanner
 sudo ./bin/kscanner
 ```
 
@@ -128,58 +133,65 @@ sudo ./bin/kscanner
 
 ## ● Investigation Workflow
 
-After detecting an RWX region, analysts may proceed with:
+After detecting an RWX region, analysts can immediately acquire volatile evidence.
 
-### 1. Binary Validation
+### 1. Live Memory Acquisition
+
+Select a suspicious process and press `ENTER`.
+
+K-Scanner will automatically:
+
+* Dump the RWX region
+* Generate SHA256 checksum
+* Extract printable strings
+* Produce a hexadecimal preview
+
+### 2. Integrity Verification
 
 ```bash
-sha256sum /proc/[PID]/exe
+cd build/dumps
+sha256sum -c *.sha256
 ```
 
-### 2. Advanced Memory Extraction
+### 3. Rapid Triage
 
 ```bash
-sudo dd if=/proc/[PID]/mem of=dump.bin bs=1 skip=<offset> count=<size>
+grep -iE "http|ssh|cmd|bash|token|pass" *.strings.txt
 ```
 
-### 3. Artifact Inspection
+### 4. Binary Inspection
 
-Use `strings` or `hexdump` on the generated dump to identify suspicious payloads.
+```bash
+head -n 20 *.hex.txt
+```
 
 ---
 
 ## ● Post-Analysis of Forensic Dumps
 
-Once **K-Scanner** identifies a suspicious **RWX** region, it automatically extracts its raw content to the `build/dumps/` directory.
+Each extracted memory region produces a complete triage package:
 
-### 1. Integrity Verification (Hashing)
+* Raw binary dump (`.bin`)
+* SHA256 checksum (`.sha256`)
+* Extracted strings (`.strings.txt`)
+* Hexadecimal preview (`.hex.txt`)
+
+### Validate All Evidence
 
 ```bash
-sha256sum build/dumps/*.bin
+sha256sum -c build/dumps/*.sha256
 ```
 
-### 2. Example for a specific dump
+### Analyze Specific Artifact
 
 ```bash
-sha256sum build/dumps/pid_101554_2dace8f1b000.bin
+strings build/dumps/pid_*.bin | head
 ```
 
-### 3. String Extraction
+### Inspect Raw Bytes
 
 ```bash
-strings build/dumps/pid_*.bin | less
-```
-
-### Targeted example
-
-```bash
-strings build/dumps/pid_101554_2dace8f1b000.bin | head -n 15
-```
-
-### 4. Hexadecimal Analysis
-
-```bash
-hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
+hexdump -C build/dumps/pid_*.bin | head
 ```
 
 ---
@@ -188,9 +200,14 @@ hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
 
 ### Requirements
 
-- Linux OS (Tested on Arch Linux 6.x)
-- gcc & make
-- sudo privileges
+* Linux Kernel 5.x or newer
+* gcc
+* make
+* ncurses
+* binutils
+* coreutils
+* UTF-8 compatible terminal
+* Root privileges
 
 ---
 
@@ -198,9 +215,10 @@ hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
 
 ```text
 ├── bin/
+│   └── kscanner
 ├── build/
-│   ├── obj/
-│   └── dumps/
+│   ├── dumps/
+│   └── obj/
 ├── docs/
 │   ├── architecture.md
 │   ├── forensic_methodology.md
@@ -208,7 +226,11 @@ hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
 │   ├── threat_model.md
 │   └── use_cases.md
 ├── examples/
+│   └── usage.md
 ├── Imagens/
+│   ├── kscanner1.png
+│   ├── kscanner2.png
+│   └── kscanner3.png
 ├── include/
 ├── scripts/
 ├── src/
@@ -216,7 +238,7 @@ hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
 │   ├── modules/
 │   └── utils/
 ├── tests/
-├── .gitignore
+│   └── cases.md
 ├── LICENSE
 ├── Makefile
 └── README.md
@@ -226,22 +248,25 @@ hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
 
 ## ● Tech Stack
 
-- **Language:** C (C99)
-- **Data Source:** /proc filesystem
-- **Build Tool:** GNU Make
-- **Target:** Linux Kernel 4.x / 5.x / 6.x
+* **Language:** C99
+* **Interface:** ncurses
+* **Data Source:** `/proc` filesystem
+* **Hashing:** SHA256
+* **Build Tool:** GNU Make
+* **Target:** Linux Kernel 5.x / 6.x
 
 ---
 
 ## ● Roadmap
 
-- [x] Modular C Engine
-- [x] Advanced Build System
-- [x] Structured Output
-- [x] Automated Memory Dump
-- [ ] JSON/CSV Export
-- [ ] Interactive TUI
-- [ ] Kernel Module (LKM)
+* [x] Modular C Engine
+* [x] Interactive ncurses TUI
+* [x] Automated Memory Dump
+* [x] SHA256 Integrity Validation
+* [x] Automated Strings/Hex Triage
+* [x] JSON/CSV Export
+* [ ] Live Regex Memory Hunting
+* [ ] eBPF Telemetry Integration
 
 ---
 
@@ -252,6 +277,8 @@ hexdump -C build/dumps/pid_101554_2dace8f1b000.bin | head -n 10
 [![Docs-ThreatModel](https://img.shields.io/badge/Threat-Model-CC0000?style=flat-square&logo=opensourceinitiative&logoColor=white)](./docs/threat_model.md)
 [![Docs-Performance](https://img.shields.io/badge/Performance-Limits-8A2BE2?style=flat-square)](./docs/performance_and_limitations.md)
 [![Docs-UseCases](https://img.shields.io/badge/Use-Cases-228B22?style=flat-square)](./docs/use_cases.md)
+
+---
 
 ## ● License
 
