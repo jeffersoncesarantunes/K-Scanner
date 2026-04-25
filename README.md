@@ -92,7 +92,7 @@ Not every RWX region is malicious. Context matters.
 *2 - **Memory Triage**: Automated extraction of printable strings from suspicious memory segments for rapid artifact analysis.*
 
 ![Forensic Extraction](./Imagens/kscanner3.png)
-*3 - **Evidence Preservation**: Cryptographic integrity verification using SHA-256, ensuring all memory dumps remain untampered (Portuguese locale).*
+*3 - **Evidence Preservation**: Cryptographic integrity verification using SHA-256, ensuring all memory dumps remain untampered.*
 
 ---
 
@@ -122,11 +122,16 @@ K-Scanner is designed for forensic stability and safe live-response operations:
 
 ## ● Build and Run
 
-```bash
+```bash 
+# Clone the repository
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
+
+# Build the project
 make clean && make
-sudo ./bin/kscanner
+
+# Standard execution
+sudo ./kscanner
 ```
 
 ---
