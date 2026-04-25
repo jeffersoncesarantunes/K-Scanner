@@ -70,13 +70,13 @@ Not every RWX region is malicious. Context matters.
 
 ```text
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ 🐧 K-Scanner | Live Forensic Process Analysis Mode                  ┃
+┃ 🐧 K-Scanner | Live Forensic Process Analysis Mode                 ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
- PID    PROCESS              STATUS      MAP_ADDR
- 1132   python3              RWX ALERT   7fc163862000
- 1135   fail2ban-server      RWX ALERT   7f59a964f000
- 1426   Xorg                 SAFE        n/a
+ PID    PROCESS              STATUS          MAP_ADDR
+ 1132   python3              RWX ALERT       7fc163862000
+ 1135   fail2ban-server      RWX ALERT       7f59a964f000
+ 1426   Xorg                 SAFE            n/a
 
  [ENTER] ANALYZE | [Q] EXIT | ALERTS: 12
 ```
