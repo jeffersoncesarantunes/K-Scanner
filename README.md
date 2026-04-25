@@ -86,13 +86,13 @@ Not every RWX region is malicious. Context matters.
 ## ● Project in Action
 
 ![Live Scan](./Imagens/kscanner1.png)
-*1 - Live process enumeration using the Brutalist ncurses interface.*
+*1 - **Live Forensic Mode**: Real-time process auditing on Arch Linux, identifying memory regions with RWX (Read-Write-Execute) permissions.*
 
 ![RWX Detection](./Imagens/kscanner2.png)
-*2 - Real-time detection of executable writable memory regions.*
+*2 - **Memory Triage**: Automated extraction of printable strings from suspicious memory segments for rapid artifact analysis.*
 
 ![Forensic Extraction](./Imagens/kscanner3.png)
-*3 - Automated dump generation, hashing, strings extraction, and hexadecimal preview.*
+*3 - **Evidence Preservation**: Cryptographic integrity verification using SHA-256, ensuring all memory dumps remain untampered (Portuguese locale).*
 
 ---
 
