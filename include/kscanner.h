@@ -1,7 +1,9 @@
 #ifndef KSCANNER_H
 #define KSCANNER_H
 
-int run_scan(void);
+#include "export_engine.h"
+
+int run_scan_formatted(ExportFormat format);
 void print_usage(void);
 
 #endif
