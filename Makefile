@@ -1,8 +1,9 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Iinclude -O2 -std=c99 -D_DEFAULT_SOURCE
+LDFLAGS = -lncurses
 OBJ_DIR = build/obj
 DUMP_DIR = build/dumps
-TARGET = bin/kscanner
+TARGET = kscanner
 
 SRCS = $(shell find src -name "*.c")
 OBJS = $(SRCS:src/%.c=$(OBJ_DIR)/%.o)
@@ -10,26 +11,27 @@ OBJS = $(SRCS:src/%.c=$(OBJ_DIR)/%.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	@echo "● Linking $(TARGET)..."
-	@mkdir -p bin
 	@mkdir -p $(DUMP_DIR)
-	$(CC) $(OBJS) -o $(TARGET)
-	@echo "✔ Build successful! Run with: sudo ./$(TARGET)"
+	@$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
+	@echo "✔ Build successful! 🟢"
 
 $(OBJ_DIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	@echo "  ○ Compiling $<..."
-	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+triage:
+	@chmod +x scripts/forensic_triage.sh
+	@./scripts/forensic_triage.sh $(PID)
 
 clean-dumps:
-	@echo "🧹 Cleaning forensic dumps from $(DUMP_DIR)..."
+	@echo "🧹 Cleaning forensic dumps..."
 	@rm -f $(DUMP_DIR)/*.bin
-	@echo "✔ Dumps removed."
+	@echo "✔ Dumps removed. 🟢"
 
 clean:
 	@echo "🧹 Cleaning project artifacts..."
 	@rm -rf build/
-	@rm -rf bin/
-	@echo "✔ Clean complete."
+	@rm -f $(TARGET)
+	@echo "✔ Clean complete. 🟢"
 
-.PHONY: all clean clean-dumps
+.PHONY: all clean clean-dumps triage
