@@ -70,7 +70,7 @@ Not every RWX region is malicious. Context matters.
 
 ```text
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ 🐧 K-Scanner | Live Forensic Process Analysis Mode                 ┃
+┃ 🐧 K-Scanner | Live Forensic Process Analysis Mode                      ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  PID    PROCESS              STATUS          MAP_ADDR
