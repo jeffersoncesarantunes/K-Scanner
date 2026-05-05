@@ -11,14 +11,6 @@ Lightweight Linux memory auditing tool focused on RWX detection and automated fo
 
 ---
 
-## ● Etymology & Origin
-
-The name **K-Scanner** originates from the Linux **Kernel** — the core layer responsible for process execution, memory management, and system security.
-
-The "K" reflects the project's mission: to inspect volatile memory at runtime, identify anomalous execution permissions, and transform low-level kernel metadata into actionable forensic intelligence.
-
----
-
 ## ● Overview
 
 K-Scanner is a lightweight forensic utility designed to inspect active Linux processes for memory regions that violate the **W^X (Write XOR Execute)** security principle.
@@ -27,68 +19,10 @@ Built in pure **C99**, it combines a high-performance scanning engine with an in
 
 Common RWX scenarios include:
 
-- Shellcode injection
-- Reflective payload loading
-- Fileless malware execution
-- JIT-compiled engines (Firefox, Python, Node.js, Discord)
-
----
-
-## ● Why
-
-Modern Linux systems generate enormous runtime activity, but visibility into executable writable memory remains fragmented.
-
-K-Scanner centralizes this analysis by providing:
-
-- Deterministic RWX detection
-- Interactive live process inspection
-- Automated forensic evidence collection
-- Immediate post-dump triage artifacts
-- Minimal operational overhead
-
-It transforms raw `/proc` telemetry into incident-response-ready intelligence.
-
----
-
-## ● How It Works
-
-K-Scanner continuously parses `/proc/[PID]/maps` to identify writable and executable memory mappings.
-
-Whenever a region exposes simultaneous **Write (W)** and **Execute (X)** permissions, the scanner raises an **RWX ALERT**.
-
-### Understanding RWX Alerts
-
-Not every RWX region is malicious. Context matters.
-
-- **Expected JIT Behavior:** Browsers, Python interpreters, Node.js, and Electron applications often allocate RWX pages for Just-In-Time compilation.
-- **Suspicious Activity:** Anonymous executable pages, shellcode-like blobs, or RWX mappings in non-JIT processes deserve immediate investigation.
-- **Forensic Priority:** Regions marked as anonymous or unexpected should be dumped and analyzed first.
-
----
-
-## ● Example Output
-
-```text
- PID    PROCESS              STATUS          MAP_ADDR
- 1132   python3              RWX ALERT       7fc163862000
- 1135   fail2ban-server      RWX ALERT       7f59a964f000
- 1426   Xorg                 SAFE            n/a
-
- [ENTER] ANALYZE | [Q] EXIT | ALERTS: 12
-```
-
----
-
-## ● Project in Action
-
-![Live Scan](./Imagens/kscanner1.png)
-*1 - **Live Forensic Mode**: Real-time process auditing on Arch Linux, identifying memory regions with RWX (Read-Write-Execute) permissions.*
-
-![RWX Detection](./Imagens/kscanner2.png)
-*2 - **Memory Triage**: Automated extraction of printable strings from suspicious memory segments for rapid artifact analysis.*
-
-![Forensic Extraction](./Imagens/kscanner3.png)
-*3 - **Evidence Preservation**: Cryptographic integrity verification using SHA-256, ensuring all memory dumps remain untampered.*
+* Shellcode injection
+* Reflective payload loading
+* Fileless malware execution
+* JIT-compiled engines (Firefox, Python, Node.js, Discord)
 
 ---
 
@@ -105,20 +39,44 @@ Not every RWX region is malicious. Context matters.
 
 ---
 
-## ● Operational Integrity
+## ● Example Output
 
-K-Scanner is designed for forensic stability and safe live-response operations:
+```text id="kex2m1"
+ PID    PROCESS              STATUS          MAP_ADDR
+ 1132   python3              RWX ALERT       7fc163862000
+ 1135   fail2ban-server      RWX ALERT       7f59a964f000
+ 1426   Xorg                 SAFE            n/a
 
-1. **Passive Analysis:** Reads metadata directly from `/proc`
-2. **No Injection:** Never modifies target processes
-3. **Controlled Extraction:** Prevents unstable full-memory dumping
-4. **Evidence Integrity:** Automatically hashes every extracted artifact
+ [ENTER] ANALYZE | [Q] EXIT | ALERTS: 12
+```
+
+---
+
+## ● How It Works
+
+K-Scanner continuously parses `/proc/[PID]/maps` to identify memory regions and their permission flags.
+
+Audit flow:
+
+1. Parse `/proc/[PID]/maps`
+2. Identify memory permissions (R / W / X)
+3. Detect RWX violations (W^X policy breach)
+4. Classify process behavior
+5. Trigger forensic extraction pipeline
+
+### Understanding RWX Alerts
+
+Not every RWX region is malicious. Context matters.
+
+* **Expected JIT Behavior:** Browsers, Python, Node.js, and Electron apps may allocate RWX memory for JIT compilation
+* **Suspicious Activity:** Anonymous executable pages or RWX regions in non-JIT processes
+* **Forensic Priority:** Unexpected mappings should be dumped and analyzed first
 
 ---
 
 ## ● Build and Run
 
-```bash 
+```bash id="p2k91a"
 # Clone the repository
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
@@ -132,9 +90,9 @@ sudo ./kscanner
 
 ---
 
-## ● Investigation Workflow
+## ● Investigation & Post-Analysis Workflow
 
-After detecting an RWX region, analysts can immediately acquire volatile evidence.
+After detecting an RWX region, analysts can immediately acquire and validate volatile evidence.
 
 ### 1. Live Memory Acquisition
 
@@ -149,51 +107,71 @@ K-Scanner will automatically:
 
 ### 2. Integrity Verification
 
-```bash
+```bash id="x91akl"
 cd build/dumps
 sha256sum -c *.sha256
 ```
 
 ### 3. Rapid Triage
 
-```bash
+```bash id="9as21x"
 grep -iE "http|ssh|cmd|bash|token|pass" *.strings.txt
 ```
 
 ### 4. Binary Inspection
 
-```bash
+```bash id="zx12qw"
 head -n 20 *.hex.txt
 ```
 
----
+### 5. Full Artifact Set
 
-## ● Post-Analysis of Forensic Dumps
-
-Each extracted memory region produces a complete triage package:
+Each memory extraction generates:
 
 * Raw binary dump (`.bin`)
 * SHA256 checksum (`.sha256`)
 * Extracted strings (`.strings.txt`)
 * Hexadecimal preview (`.hex.txt`)
 
-### Validate All Evidence
+---
 
-```bash
-sha256sum -c build/dumps/*.sha256
-```
+## ● Why
 
-### Analyze Specific Artifact
+Detecting executable writable memory in Linux is still a fragmented and manual process.
 
-```bash
-strings build/dumps/pid_*.bin | head
-```
+K-Scanner centralizes this capability by providing:
 
-### Inspect Raw Bytes
+* Deterministic RWX detection
+* Interactive live process inspection
+* Automated forensic evidence collection
+* Immediate triage-ready artifacts
+* Minimal operational overhead
 
-```bash
-hexdump -C build/dumps/pid_*.bin | head
-```
+It transforms raw `/proc` telemetry into incident-response-ready intelligence.
+
+---
+
+## ● Project in Action
+
+![Live Scan](./Imagens/kscanner1.png)
+*1 - Live forensic mode identifying RWX memory regions in real-time.*
+
+![RWX Detection](./Imagens/kscanner2.png)
+*2 - Memory triage with automatic extraction of relevant strings.*
+
+![Forensic Extraction](./Imagens/kscanner3.png)
+*3 - Evidence preservation with SHA-256 integrity validation.*
+
+---
+
+## ● Operational Integrity
+
+K-Scanner is designed for safe live-response environments:
+
+* Passive / read-only analysis
+* No process injection
+* Controlled memory dumping
+* Automatic evidence integrity validation
 
 ---
 
@@ -214,7 +192,7 @@ hexdump -C build/dumps/pid_*.bin | head
 
 ## ● Repository Structure
 
-```text
+```text id="kq12zx"
 ├── bin/
 │   └── kscanner
 ├── build/
@@ -238,7 +216,18 @@ hexdump -C build/dumps/pid_*.bin | head
 │   ├── core/
 │   ├── modules/
 │   └── utils/
-├── tests/
+# 🐧 K-Scanner
+
+Lightweight Linux memory auditing tool focused on RWX detection and automated forensic triage.
+
+[![Platform-Linux](https://img.shields.io/badge/Platform-Linux-1793D1?style=flat-square&logo=linux&logoColor=white)](https://kernel.org)
+[![Language-C99](https://img.shields.io/badge/Language-C99-A8B9CC?style=flat-square&logo=c&logoColor=white)](https://gcc.gnu.org/)
+[![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square&logo=license&logoColor=white)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Active-00FF41?style=flat-square)](#-roadmap)
+[![Tested-on](https://img.shields.io/badge/Tested%20on-Arch%20Linux-1793D1?style=flat-square&logo=arch-linux)](https://security.archlinux.org/)
+[![Domain](https://img.shields.io/badge/Domain-Live%20Memory%20Forensics-8A2BE2?style=flat-square)](./docs/forensic_methodology.md)
+
+---├── tests/
 │   └── cases.md
 ├── LICENSE
 ├── Makefile
@@ -251,7 +240,7 @@ hexdump -C build/dumps/pid_*.bin | head
 
 * **Language:** C99
 * **Interface:** ncurses
-* **Data Source:** `/proc` filesystem
+* **Data Source:** `/proc`
 * **Hashing:** SHA256
 * **Build Tool:** GNU Make
 * **Target:** Linux Kernel 5.x / 6.x
@@ -273,16 +262,22 @@ hexdump -C build/dumps/pid_*.bin | head
 
 ## ● Documentation
 
-[![Docs-Architecture](https://img.shields.io/badge/Architecture-Design-00599C?style=flat-square&logo=linux&logoColor=white)](./docs/architecture.md)
-[![Docs-Methodology](https://img.shields.io/badge/Forensic-Methodology-444444?style=flat-square&logo=gnu-bash&logoColor=white)](./docs/forensic_methodology.md)
-[![Docs-ThreatModel](https://img.shields.io/badge/Threat-Model-CC0000?style=flat-square&logo=opensourceinitiative&logoColor=white)](./docs/threat_model.md)
+[![Docs-Architecture](https://img.shields.io/badge/Architecture-Design-00599C?style=flat-square\&logo=linux\&logoColor=white)](./docs/architecture.md)
+[![Docs-Methodology](https://img.shields.io/badge/Forensic-Methodology-444444?style=flat-square\&logo=gnu-bash\&logoColor=white)](./docs/forensic_methodology.md)
+[![Docs-ThreatModel](https://img.shields.io/badge/Threat-Model-CC0000?style=flat-square\&logo=opensourceinitiative\&logoColor=white)](./docs/threat_model.md)
 [![Docs-Performance](https://img.shields.io/badge/Performance-Limits-8A2BE2?style=flat-square)](./docs/performance_and_limitations.md)
 [![Docs-UseCases](https://img.shields.io/badge/Use-Cases-228B22?style=flat-square)](./docs/use_cases.md)
 
 ---
 
+## ● Etymology & Origin
+
+The name **K-Scanner** originates from the Linux **Kernel**, reflecting its role in inspecting runtime memory behavior and exposing anomalous execution patterns.
+
+---
+
 ## ● License
 
-[![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square&logo=opensourceinitiative&logoColor=white)](./LICENSE)
+[![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square\&logo=opensourceinitiative\&logoColor=white)](./LICENSE)
 
 *This project is licensed under the MIT License.*
