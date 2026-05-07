@@ -191,8 +191,7 @@ K-Scanner is designed for safe live-response environments:
 ---
 
 ## ● Repository Structure
-
-```text id="kq12zx"
+```text
 ├── bin/
 │   └── kscanner
 ├── build/
@@ -216,18 +215,7 @@ K-Scanner is designed for safe live-response environments:
 │   ├── core/
 │   ├── modules/
 │   └── utils/
-# 🐧 K-Scanner
-
-Lightweight Linux memory auditing tool focused on RWX detection and automated forensic triage.
-
-[![Platform-Linux](https://img.shields.io/badge/Platform-Linux-1793D1?style=flat-square&logo=linux&logoColor=white)](https://kernel.org)
-[![Language-C99](https://img.shields.io/badge/Language-C99-A8B9CC?style=flat-square&logo=c&logoColor=white)](https://gcc.gnu.org/)
-[![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square&logo=license&logoColor=white)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Active-00FF41?style=flat-square)](#-roadmap)
-[![Tested-on](https://img.shields.io/badge/Tested%20on-Arch%20Linux-1793D1?style=flat-square&logo=arch-linux)](https://security.archlinux.org/)
-[![Domain](https://img.shields.io/badge/Domain-Live%20Memory%20Forensics-8A2BE2?style=flat-square)](./docs/forensic_methodology.md)
-
----├── tests/
+├── tests/
 │   └── cases.md
 ├── LICENSE
 ├── Makefile
