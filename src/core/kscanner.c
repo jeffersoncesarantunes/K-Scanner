@@ -7,10 +7,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <ncurses.h>
-#include "colors.h"
 #include "kscanner.h"
-#include "forensic_core.h"
-#include "logger.h"
 #include "export_engine.h"
 #include "tui_engine.h"
 
@@ -186,11 +183,13 @@ int run_scan_formatted(ExportFormat format) {
                         for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
                         refresh();
                         dump_memory_region(records[selected].pid, records[selected].mem_addr);
+                        attrset(A_NORMAL);
                         attron(COLOR_PAIR(1) | A_BOLD | A_REVERSE);
                         mvprintw(LINES - 1, 0, " [V] FORENSIC REPORT GENERATED SUCCESSFULLY IN: build/dumps/ ");
                         for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
                         refresh();
                         sleep(2);
+                        attrset(A_NORMAL);
                     } else {
                         attron(COLOR_PAIR(5) | A_BOLD | A_REVERSE);
                         mvprintw(LINES - 1, 0, " [X] SECURITY BYPASS: PROCESS IS STABLE - NO VOLATILE RWX REGIONS DETECTED ");
@@ -198,7 +197,7 @@ int run_scan_formatted(ExportFormat format) {
                         refresh();
                         beep();
                         sleep(2);
-                        attroff(COLOR_PAIR(5) | A_BOLD | A_REVERSE);
+                        attrset(A_NORMAL);
                     }
                     break;
             }
@@ -214,12 +213,4 @@ int run_scan_formatted(ExportFormat format) {
     return 0;
 }
 
-void print_usage(void) {
-    printf("\n%sK-Scanner Forensic Tool%s\n", CLR_BOLD, CLR_RESET);
-    printf("Usage: sudo ./kscanner [OPTIONS]\n\n");
-    printf("Options:\n");
-    printf("  --help    Show this diagnostic information\n");
-    printf("  --json    Output in JSON format\n");
-    printf("  --csv     Output in CSV format\n\n");
-    printf("Note: Root privileges are required to access process memory maps.\n");
-}
+

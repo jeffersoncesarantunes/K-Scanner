@@ -3,19 +3,16 @@
 
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <regex.h>
 
 typedef struct {
     pid_t pid;
-    char name[256];
-    char threat_level[20];
-    char context[20];
-} process_info_t;
+    unsigned long long address_start;
+    char context_preview[512];
+} regex_match_t;
 
-void scan_processes(void);
-int analyze_process_risk(int pid, const char *name);
-int analyze_process_safety(int pid, const char* reported_name);
-int is_sandboxed(int pid);
-void print_process_table(process_info_t *processes, int count);
+int start_live_regex_hunting(pid_t pid, const char *pattern);
+void dispatch_regex_match(regex_match_t *match);
+void run_live_regex_scan(int pid, const char *pattern);
 
 #endif
