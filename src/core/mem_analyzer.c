@@ -1,7 +1,6 @@
 #include "forensic_core.h"
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 int forensic_has_rwx_memory(pid_t pid) {
     char path[64];

@@ -16,7 +16,7 @@ command -v make >/dev/null 2>&1 || {
 }
 
 # Create necessary directories
-mkdir -p bin obj/core obj/utils obj/modules
+mkdir -p build/obj
 
 echo "✅ Environment ready!"
 echo "   - GCC: $(gcc --version | head -n1)"

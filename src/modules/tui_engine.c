@@ -66,7 +66,7 @@ void update_dashboard(const ForensicRecord *records, int count, int selected_idx
                  records[curr_idx].status, 
                  records[curr_idx].mem_addr);
 
-        attroff(COLOR_PAIR(1) | COLOR_PAIR(2) | A_REVERSE | A_BOLD);
+        attrset(A_NORMAL);
     }
 
     refresh();

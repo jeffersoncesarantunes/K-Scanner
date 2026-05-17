@@ -1,7 +1,6 @@
 #include "forensic_core.h"
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 int forensic_get_process_info(pid_t pid, forensic_process_t *proc) {
     char path[512];

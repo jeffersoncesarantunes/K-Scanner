@@ -4,6 +4,5 @@
 #include "export_engine.h"
 
 int run_scan_formatted(ExportFormat format);
-void print_usage(void);
 
 #endif

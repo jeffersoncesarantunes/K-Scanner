@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude -O2 -std=c99 -D_DEFAULT_SOURCE
+CFLAGS = -Wall -Wextra -Wpedantic -Iinclude -O2 -std=c99 -D_DEFAULT_SOURCE
 LDFLAGS = -lncurses
 OBJ_DIR = build/obj
 DUMP_DIR = build/dumps

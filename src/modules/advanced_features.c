@@ -1,11 +1,7 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include "kscanner.h"
-#include "colors.h"
+#include "../../include/scanner_core.h"
+#include "../../include/colors.h"
 
 int is_containerized(int pid) {
     char path[256];
@@ -40,4 +36,14 @@ void print_advanced_report(int pid, char* name, int has_rwx) {
 void run_advanced_scan(void) {
     printf("%s[+] Running advanced container detection scan%s\n", 
            CLR_CYAN, CLR_RESET);
+}
+
+void run_live_regex_scan(int pid, const char *pattern) {
+    printf("%s[+] Initializing Live Regex Hunting for PID %d%s\n", 
+           CLR_YELLOW, pid, CLR_RESET);
+    
+    if (start_live_regex_hunting(pid, pattern) != 0) {
+        printf("%s[-] Regex Hunting failed for PID %d%s\n", 
+               CLR_RED, pid, CLR_RESET);
+    }
 }
