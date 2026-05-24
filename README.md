@@ -11,6 +11,12 @@ Lightweight Linux memory auditing tool focused on RWX detection and automated fo
 
 ---
 
+## ● Etymology & Origin
+
+The name **K-Scanner** originates from the Linux **Kernel**, reflecting its role in inspecting runtime memory behavior and exposing anomalous execution patterns. The "K" pays homage to the Linux Kernel — the core operating system component that the tool relies on to scan process memory maps and detect RWX violations at the system level.
+
+---
+
 ## ● Overview
 
 K-Scanner is a lightweight forensic utility designed to inspect active Linux processes for memory regions that violate the **W^X (Write XOR Execute)** security principle.
@@ -255,12 +261,6 @@ K-Scanner is designed for safe live-response environments:
 [![Docs-ThreatModel](https://img.shields.io/badge/Threat-Model-CC0000?style=flat-square\&logo=opensourceinitiative\&logoColor=white)](./docs/threat_model.md)
 [![Docs-Performance](https://img.shields.io/badge/Performance-Limits-8A2BE2?style=flat-square)](./docs/performance_and_limitations.md)
 [![Docs-UseCases](https://img.shields.io/badge/Use-Cases-228B22?style=flat-square)](./docs/use_cases.md)
-
----
-
-## ● Etymology & Origin
-
-The name **K-Scanner** originates from the Linux **Kernel**, reflecting its role in inspecting runtime memory behavior and exposing anomalous execution patterns.
 
 ---
 
