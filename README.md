@@ -42,6 +42,8 @@ Common RWX scenarios include:
 * Automatic hexadecimal preview generation
 * SAFE / RWX ALERT classification
 * Low-overhead live analysis
+* Live regex memory hunting (`--live <PID> <pattern>`)
+* eBPF real-time RWX telemetry (`--bpf`, requires root + libbpf)
 
 ---
 
@@ -87,11 +89,35 @@ Not every RWX region is malicious. Context matters.
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
 
-# Build the project
-make clean && make
+# Build the project (BPF object + main binary)
+make bpf && make clean && make
 
-# Standard execution
+# Run automated tests
+make test
+
+# Install system-wide (binary + BPF object)
+sudo make install
+
+# --- Usage ---
+
+# Help
+./kscanner --help
+
+# Standard execution (TUI)
 sudo ./kscanner
+
+# JSON/CSV export (headless)
+sudo ./kscanner --json
+sudo ./kscanner --csv
+
+# Live regex memory hunting
+sudo ./kscanner --live <PID> '<regex>'
+
+# eBPF real-time RWX monitoring
+sudo ./kscanner --bpf
+
+# Uninstall
+sudo make uninstall
 ```
 
 ---
@@ -194,6 +220,13 @@ K-Scanner is designed for safe live-response environments:
 * UTF-8 compatible terminal
 * Root privileges
 
+### Optional (eBPF telemetry)
+
+* libbpf (runtime + build-time)
+* Clang (build-time, for BPF compilation)
+* Kernel BTF (`/sys/kernel/btf/vmlinux`)
+* `CONFIG_BPF`, `CONFIG_BPF_SYSCALL`, `CONFIG_DEBUG_INFO_BTF` enabled
+
 ---
 
 ## ● Repository Structure
@@ -218,6 +251,7 @@ K-Scanner is designed for safe live-response environments:
 ├── include/
 ├── scripts/
 ├── src/
+│   ├── bpf/
 │   ├── core/
 │   ├── modules/
 │   └── utils/
@@ -234,9 +268,10 @@ K-Scanner is designed for safe live-response environments:
 
 * **Language:** C99
 * **Interface:** ncurses
-* **Data Source:** `/proc`
+* **Data Source:** `/proc`, `raw_tp/sys_enter` (eBPF)
+* **Telemetry:** eBPF + libbpf (optional, requires kernel BTF)
 * **Hashing:** SHA256
-* **Build Tool:** GNU Make
+* **Build Tool:** GNU Make + Clang (for BPF)
 * **Target:** Linux Kernel 5.x / 6.x
 
 ---
@@ -249,8 +284,12 @@ K-Scanner is designed for safe live-response environments:
 * [x] SHA256 Integrity Validation
 * [x] Automated Strings/Hex Triage
 * [x] JSON/CSV Export
-* [ ] Live Regex Memory Hunting
-* [ ] eBPF Telemetry Integration
+* [x] Live Regex Memory Hunting (`--live`)
+* [x] eBPF Real-time RWX Telemetry (`--bpf`)
+* [ ] YARA rule-based detection pattern matching
+* [ ] Multi-process coordinated attack scenarios
+* [ ] Remote API / gRPC endpoint for SIEM integration
+* [ ] Container-aware deep inspection (Docker/k8s cgroup correlation)
 
 ---
 

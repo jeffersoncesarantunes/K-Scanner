@@ -1,24 +1,42 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "../include/kscanner.h"
 #include "../include/scanner_core.h"
 #include "../include/colors.h"
 #include "../include/export_engine.h"
 #include "../include/tui_engine.h"
+#include "../include/bpf_telemetry.h"
 
-void print_main_usage(void) {
+static void print_main_usage(void) {
     printf("Usage: kscanner [OPTIONS]\n");
     printf("Options:\n");
     printf("  --json             Export results in JSON format\n");
     printf("  --csv              Export results in CSV format\n");
     printf("  --live <pid> <rgx> Search for regex pattern in process memory\n");
+    printf("  --bpf              Enable eBPF real-time RWX telemetry (requires root)\n");
     printf("  --help             Show this help message\n");
+}
+
+static int handle_bpf_flag(BpfTelemetryState *bpf_state) {
+    int ret = bpf_telemetry_init(bpf_state);
+    if (ret != 0) {
+        fprintf(stderr, "%s[!] eBPF telemetry unavailable: %s%s\n",
+                CLR_YELLOW, bpf_state->error_msg, CLR_RESET);
+        fprintf(stderr, "    Either the BPF object is missing (re-build with 'make bpf')\n");
+        fprintf(stderr, "    or the kernel does not support BPF / you lack CAP_BPF.\n");
+        return -1;
+    }
+    fprintf(stderr, "%s[+] eBPF telemetry active — monitoring RWX allocations in real time%s\n",
+            CLR_GREEN, CLR_RESET);
+    return 0;
 }
 
 int main(int argc, char *argv[]) {
     ExportFormat selected_format = EXPORT_TERMINAL;
     int use_tui = 1;
+    int use_bpf = 0;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--live") == 0) {
@@ -37,21 +55,42 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "--csv") == 0) {
             selected_format = EXPORT_CSV;
             use_tui = 0;
+        } else if (strcmp(argv[i], "--bpf") == 0) {
+            use_bpf = 1;
         } else if (strcmp(argv[i], "--help") == 0) {
             print_main_usage();
             return 0;
         }
     }
 
+    BpfTelemetryState bpf_state;
+    if (use_bpf) {
+        if (handle_bpf_flag(&bpf_state) != 0) {
+            return 1;
+        }
+    }
+
     if (use_tui) {
         init_tui();
-        run_scan_formatted(selected_format);
+        run_scan_formatted_bpf(selected_format, use_bpf ? &bpf_state : NULL);
         stop_tui();
     } else {
         if (run_scan_formatted(selected_format) != 0) {
             fprintf(stderr, "%s[!] Critical error during scan%s\n", CLR_RED, CLR_RESET);
             return 1;
         }
+        if (use_bpf) {
+            BpfRwxEvent bpf_ev;
+            int n = bpf_telemetry_drain_ring(&bpf_state, &bpf_ev, 1);
+            if (n > 0) {
+                printf("%s[BPF] RWX allocation — PID %d (%s) @ %s%s\n",
+                       CLR_RED, bpf_ev.pid, bpf_ev.comm, bpf_ev.addr, CLR_RESET);
+            }
+        }
+    }
+
+    if (use_bpf) {
+        bpf_telemetry_shutdown(&bpf_state);
     }
 
     return 0;

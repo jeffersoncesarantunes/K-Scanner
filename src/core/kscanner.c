@@ -10,6 +10,7 @@
 #include "kscanner.h"
 #include "export_engine.h"
 #include "tui_engine.h"
+#include "bpf_telemetry.h"
 
 static const char* map_context_tag(const char* path, int* is_suspicious) {
     *is_suspicious = 0;
@@ -209,6 +210,106 @@ int run_scan_formatted(ExportFormat format) {
         }
         export_footer(format);
     }
+    free(records);
+    return 0;
+}
+
+int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf)
+{
+    (void)format;
+    DIR *dir;
+    struct dirent *entry;
+    char temp_name[256];
+    ForensicRecord *records = malloc(sizeof(ForensicRecord) * 1024);
+    int count = 0;
+    int rwx_total = 0;
+    dir = opendir("/proc");
+    if (!dir) {
+        free(records);
+        return 1;
+    }
+    while ((entry = readdir(dir)) != NULL && count < 1024) {
+        if (!isdigit(entry->d_name[0])) continue;
+        int pid = atoi(entry->d_name);
+        records[count].pid = pid;
+        get_process_name(pid, temp_name);
+        strncpy(records[count].process_name, temp_name, 256);
+        char rwx_details[128], rwx_addr[64];
+        int violations = check_mem_rwx(pid, rwx_details, rwx_addr);
+        strncpy(records[count].status, (violations > 0) ? "RWX ALERT" : "SAFE", 64);
+        strncpy(records[count].info_path, rwx_details, 512);
+        strncpy(records[count].mem_addr, rwx_addr, 64);
+        if (violations > 0) rwx_total++;
+        count++;
+    }
+    closedir(dir);
+
+    int selected = 0;
+    int running = 1;
+    while (running) {
+        if (bpf && bpf->active) {
+            bpf_telemetry_poll(bpf);
+        }
+        update_dashboard(records, count, selected);
+
+        if (bpf && bpf->active && bpf->ring_head != bpf->ring_tail) {
+            BpfRwxEvent bpf_ev;
+            if (bpf_telemetry_drain_ring(bpf, &bpf_ev, 1) > 0) {
+                attron(COLOR_PAIR(2) | A_BOLD);
+                mvprintw(LINES - 2, 2, " [BPF] RWX by PID %d (%-8s) @ %s       ",
+                         bpf_ev.pid, bpf_ev.comm, bpf_ev.addr);
+                attroff(COLOR_PAIR(2) | A_BOLD);
+            }
+        }
+
+        attron(COLOR_PAIR(3) | A_BOLD);
+        mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | BPF: %s | TARGET: %-15.15s (PID: %-6d)",
+                 rwx_total,
+                 (bpf && bpf->active) ? "ON " : "OFF",
+                 records[selected].process_name, records[selected].pid);
+        for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
+        attroff(COLOR_PAIR(3) | A_BOLD);
+        refresh();
+
+        int ch = handle_input();
+        switch (ch) {
+            case KEY_UP:
+                if (selected > 0) selected--;
+                break;
+            case KEY_DOWN:
+                if (selected < count - 1) selected++;
+                break;
+            case 'q':
+            case 'Q':
+                running = 0;
+                break;
+            case 10:
+                if (strcmp(records[selected].mem_addr, "n/a") != 0) {
+                    attron(COLOR_PAIR(2) | A_BOLD | A_REVERSE);
+                    mvprintw(LINES - 1, 0, " [!] ACTION: PERFORMING DEEP MEMORY SCAN ON PID %d... ", records[selected].pid);
+                    for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
+                    refresh();
+                    dump_memory_region(records[selected].pid, records[selected].mem_addr);
+                    attrset(A_NORMAL);
+                    attron(COLOR_PAIR(1) | A_BOLD | A_REVERSE);
+                    mvprintw(LINES - 1, 0, " [V] FORENSIC REPORT GENERATED SUCCESSFULLY IN: build/dumps/ ");
+                    for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
+                    refresh();
+                    sleep(2);
+                    attrset(A_NORMAL);
+                } else {
+                    attron(COLOR_PAIR(5) | A_BOLD | A_REVERSE);
+                    mvprintw(LINES - 1, 0, " [X] SECURITY BYPASS: PROCESS IS STABLE - NO VOLATILE RWX REGIONS DETECTED ");
+                    for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
+                    refresh();
+                    beep();
+                    sleep(2);
+                    attrset(A_NORMAL);
+                }
+                break;
+        }
+    }
+
     free(records);
     return 0;
 }
