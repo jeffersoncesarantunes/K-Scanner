@@ -51,6 +51,7 @@ install: $(TARGET) bpf
 	@mkdir -p $(BINDIR) $(SHAREDIR)
 	@install -m 755 $(TARGET) $(BINDIR)/$(TARGET)
 	@install -m 644 $(BPF_OBJ) $(SHAREDIR)/rwx_monitor.bpf.o
+	@sha256sum $(SHAREDIR)/rwx_monitor.bpf.o > $(SHAREDIR)/rwx_monitor.bpf.o.sha256
 	@echo "  Installed $(TARGET) to $(BINDIR)"
 	@echo "  Installed BPF object to $(SHAREDIR)"
 

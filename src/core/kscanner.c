@@ -6,11 +6,37 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <ncurses.h>
 #include "kscanner.h"
 #include "export_engine.h"
 #include "tui_engine.h"
 #include "bpf_telemetry.h"
+
+static void write_hex_dump(const char *in_path, const char *out_path, size_t max_lines) {
+    FILE *in = fopen(in_path, "rb");
+    if (!in) return;
+    FILE *out = fopen(out_path, "w");
+    if (!out) { fclose(in); return; }
+    unsigned char buf[16];
+    size_t offset = 0, lines = 0, n;
+    while ((n = fread(buf, 1, 16, in)) > 0 && lines < max_lines) {
+        fprintf(out, "%08zx  ", offset);
+        for (size_t i = 0; i < 16; i++) {
+            if (i < n) fprintf(out, "%02x ", buf[i]);
+            else fprintf(out, "   ");
+            if (i == 7) fputc(' ', out);
+        }
+        fputs(" |", out);
+        for (size_t i = 0; i < n; i++)
+            fputc((buf[i] >= 32 && buf[i] < 127) ? buf[i] : '.', out);
+        fputs("|\n", out);
+        offset += n;
+        lines++;
+    }
+    fclose(in);
+    fclose(out);
+}
 
 static const char* map_context_tag(const char* path, int* is_suspicious) {
     *is_suspicious = 0;
@@ -33,8 +59,8 @@ static const char* map_context_tag(const char* path, int* is_suspicious) {
 }
 
 static void dump_memory_region(int pid, char *addr_str) {
-    char mem_path[256], out_path[256], line[512], cmd[2048];
-    char file_name[128];
+    char mem_path[256], out_path[256], line[512];
+    char file_name[128], fpath[512];
     unsigned long start, end;
     snprintf(mem_path, sizeof(mem_path), "/proc/%d/maps", pid);
     FILE *f = fopen(mem_path, "r");
@@ -68,13 +94,32 @@ static void dump_memory_region(int pid, char *addr_str) {
         if (out_fd != -1) {
             write(out_fd, buffer, size);
             close(out_fd);
-            snprintf(cmd, sizeof(cmd), 
-                "cd build/dumps && "
-                "sha256sum %s > %s.sha256 && "
-                "strings -n 6 %s > %s.strings.txt && "
-                "hexdump -C %s | head -n 256 > %s.hex.txt",
-                file_name, file_name, file_name, file_name, file_name, file_name);
-            system(cmd);
+            snprintf(fpath, sizeof(fpath), "build/dumps/%s", file_name);
+            int child, st;
+            child = fork();
+            if (child == 0) {
+                snprintf(out_path, sizeof(out_path), "build/dumps/%s.sha256", file_name);
+                int ofd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+                if (ofd == -1) _exit(1);
+                dup2(ofd, STDOUT_FILENO);
+                close(ofd);
+                execlp("sha256sum", "sha256sum", fpath, NULL);
+                _exit(1);
+            }
+            waitpid(child, &st, 0);
+            child = fork();
+            if (child == 0) {
+                snprintf(out_path, sizeof(out_path), "build/dumps/%s.strings.txt", file_name);
+                int ofd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+                if (ofd == -1) _exit(1);
+                dup2(ofd, STDOUT_FILENO);
+                close(ofd);
+                execlp("strings", "strings", "-n", "6", fpath, NULL);
+                _exit(1);
+            }
+            waitpid(child, &st, 0);
+            snprintf(out_path, sizeof(out_path), "build/dumps/%s.hex.txt", file_name);
+            write_hex_dump(fpath, out_path, 256);
         }
     }
     close(fd);

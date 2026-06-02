@@ -42,3 +42,32 @@ results/
 # Operating System Files
 .DS_Store
 Thumbs.db
+
+# Environment & Secrets
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+secrets.yml
+.netrc
+id_*
+known_hosts
+.ssh/
+.gnupg/
+
+# Cloud Infrastructure
+.terraform/
+*.tfstate
+.kube/
+kubeconfig
+.aws/
+
+# Forensic Artifacts (root dir)
+forensic_report.txt
+genai
+os
+
+# NPM/Python configs
+.npmrc
+.pypirc

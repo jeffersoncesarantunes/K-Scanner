@@ -35,5 +35,5 @@ int forensic_init(void) {
 }
 
 void forensic_cleanup(void) {
-    /* no persistent resources to release in current architecture */
+    
 }

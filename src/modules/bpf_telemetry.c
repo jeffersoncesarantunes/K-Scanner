@@ -6,12 +6,7 @@
 #include <bpf/bpf.h>
 #include <sys/resource.h>
 
-/*
- * The BPF object is compiled at build time (src/bpf/rwx_monitor.bpf.c)
- * and installed alongside the binary under SHAREDIR/kscanner/.
- * Fallback paths are tried at runtime so the tool works from both
- * the build tree and an installed location.
- */
+
 #define BPF_OBJ_INSTALLED "/usr/local/share/kscanner/rwx_monitor.bpf.o"
 #define BPF_OBJ_BUILDTREE "build/bpf/rwx_monitor.bpf.o"
 

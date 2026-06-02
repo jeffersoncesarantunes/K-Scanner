@@ -1,13 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
-/*
- * K-Scanner eBPF Telemetry — Real-time RWX Memory Detection
- *
- * Hooks into sys_enter tracepoints for mmap(2) and mprotect(2)
- * to detect processes allocating writable+executable memory in real time.
- *
- * Architecture: x86_64 (syscall numbers hardcoded for raw_tp)
- */
-
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
 
@@ -32,19 +22,6 @@ struct {
     __uint(max_entries, 64);
 } rwx_events SEC(".maps");
 
-/*
- * Hook: sys_enter tracepoint (raw)
- * Monitors mmap(2) and mprotect(2) for PROT_WRITE | PROT_EXEC.
- *
- * ctx->args layout for raw_tp/sys_enter:
- *   args[0] = syscall number
- *   args[1] = arg0 (addr)
- *   args[2] = arg1 (length)
- *   args[3] = arg2 (prot)
- *   args[4] = arg3 (flags / dummy)
- *   args[5] = arg4 (fd / dummy)
- *   args[6] = arg5 (offset / dummy)
- */
 SEC("raw_tp/sys_enter")
 int trace_sys_enter(struct bpf_raw_tracepoint_args *ctx)
 {
@@ -55,7 +32,6 @@ int trace_sys_enter(struct bpf_raw_tracepoint_args *ctx)
 
     __u64 prot = ctx->args[3];
 
-    /* Skip regions that are NOT simultaneously writable AND executable */
     if (!(prot & PROT_WRITE) || !(prot & PROT_EXEC))
         return 0;
 
