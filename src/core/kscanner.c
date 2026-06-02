@@ -38,6 +38,89 @@ static void write_hex_dump(const char *in_path, const char *out_path, size_t max
     fclose(out);
 }
 
+static void scan_shellcode_patterns(const void *buf, size_t size, const char *out_path) {
+    FILE *out = fopen(out_path, "w");
+    if (!out) return;
+    const unsigned char *p = (const unsigned char *)buf;
+    size_t scan = (size > 4096) ? 4096 : size;
+    int found = 0;
+
+    int nop_count = 0, nop_max = 0;
+    for (size_t i = 0; i < scan; i++) {
+        if (p[i] == 0x90) {
+            int run = 1;
+            while (i + run < scan && p[i + run] == 0x90) run++;
+            if (run >= 8) { nop_count++; if (run > nop_max) nop_max = run; }
+            i += run - 1;
+        }
+    }
+    if (nop_count > 0) {
+        fprintf(out, "NOP_SLED %dx longest=%d\n", nop_count, nop_max);
+        found = 1;
+    }
+
+    int sc = 0, i80 = 0;
+    for (size_t i = 0; i < scan - 1; i++) {
+        if (p[i] == 0x0f && p[i+1] == 0x05) sc++;
+        if (p[i] == 0xcd && p[i+1] == 0x80) i80++;
+    }
+    if (sc > 0) { fprintf(out, "SYSCALL_x64 %dx\n", sc); found = 1; }
+    if (i80 > 0) { fprintf(out, "INT_0x80 %dx\n", i80); found = 1; }
+
+    int jr = 0, js = 0, jd = 0;
+    for (size_t i = 0; i < scan - 1; i++) {
+        if (p[i] == 0xff) {
+            if (p[i+1] == 0xe0) jr++;
+            if (p[i+1] == 0xe4) js++;
+            if (p[i+1] == 0xe7) jd++;
+        }
+    }
+    if (jr > 0) { fprintf(out, "JMP_RAX %dx\n", jr); found = 1; }
+    if (js > 0) { fprintf(out, "JMP_RSP %dx\n", js); found = 1; }
+    if (jd > 0) { fprintf(out, "JMP_RDI %dx\n", jd); found = 1; }
+
+    int pr = 0;
+    for (size_t i = 0; i < scan - 2; i++) {
+        if (p[i+1] == 0xc3 && (p[i] == 0x5f || p[i] == 0x5e || p[i] == 0x5a || p[i] == 0x58))
+            pr++;
+    }
+    if (pr > 0) { fprintf(out, "POP_RET_ROPGADGET %dx\n", pr); found = 1; }
+
+    int bs = 0;
+    for (size_t i = 0; i < scan - 7; i++)
+        if (p[i] == '/' && memcmp(p + i, "/bin/sh", 7) == 0) bs++;
+    if (bs > 0) { fprintf(out, "BINSH_STRING %dx\n", bs); found = 1; }
+
+    if (!found) fprintf(out, "NO_SUSPICIOUS_PATTERNS\n");
+    fclose(out);
+}
+
+static void write_disassembly_file(const void *buf, size_t size, const char *out_path, unsigned long start_addr) {
+    size_t trunc = (size > 4096) ? 4096 : size;
+    char tmp_path[512];
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", out_path);
+    FILE *tmp = fopen(tmp_path, "wb");
+    if (!tmp) return;
+    fwrite(buf, 1, trunc, tmp);
+    fclose(tmp);
+
+    char addr_opt[64];
+    snprintf(addr_opt, sizeof(addr_opt), "x86-64,addr=0x%lx", start_addr);
+
+    pid_t child = fork();
+    if (child == 0) {
+        int fd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        if (fd == -1) _exit(1);
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
+        execlp("objdump", "objdump", "-D", "-b", "binary", "-m", "i386", "-M", addr_opt, tmp_path, NULL);
+        _exit(1);
+    }
+    int st;
+    waitpid(child, &st, 0);
+    unlink(tmp_path);
+}
+
 static ConfidenceLevel map_context_tag(const char* path, char *out_tag, size_t tag_size) {
     if (path == NULL || path[0] == '\0' || strcmp(path, "[Anonymous/Heap]") == 0) {
         snprintf(out_tag, tag_size, "ANON_BLOB");
@@ -144,6 +227,10 @@ static void dump_memory_region(int pid, char *addr_str) {
             waitpid(child, &st, 0);
             snprintf(out_path, sizeof(out_path), "build/dumps/%s.hex.txt", file_name);
             write_hex_dump(fpath, out_path, 256);
+            snprintf(out_path, sizeof(out_path), "build/dumps/%s.disasm.txt", file_name);
+            write_disassembly_file(buffer, size, out_path, start);
+            snprintf(out_path, sizeof(out_path), "build/dumps/%s.shellcode.txt", file_name);
+            scan_shellcode_patterns(buffer, size, out_path);
         }
     }
     close(fd);

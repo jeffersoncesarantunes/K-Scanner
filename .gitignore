@@ -27,6 +27,8 @@ results/
 *.sha256
 *.strings.txt
 *.hex.txt
+*.disasm.txt
+*.shellcode.txt
 *.json
 *.csv
 

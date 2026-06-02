@@ -40,6 +40,8 @@ Common RWX scenarios include:
 * Automatic SHA256 integrity hashing
 * Automatic strings report generation
 * Automatic hexadecimal preview generation
+* **Automatic x86-64 disassembly** (native object dump)
+* **Shellcode pattern detection** (NOP sleds, syscall, JMP gadgets, ROP, /bin/sh)
 * SAFE / RWX ALERT classification
 * **Confidence-based alert levels** (LOW / MEDIUM / CRITICAL)
 * **JIT engine detection** (V8, SpiderMonkey, LuaJIT, Mono, .NET, JVM, Dart)
@@ -171,6 +173,8 @@ Each memory extraction generates:
 * SHA256 checksum (`.sha256`)
 * Extracted strings (`.strings.txt`)
 * Hexadecimal preview (`.hex.txt`)
+* x86-64 disassembly listing (`.disasm.txt`)
+* Shellcode pattern analysis (`.shellcode.txt`)
 
 ---
 
@@ -297,7 +301,7 @@ K-Scanner is designed for safe live-response environments:
 * [x] **JIT engine auto-detection** (V8, SpiderMonkey, LuaJIT, .NET, JVM, Dart)
 * [x] **`--silent-jit`** — suppress JIT false positives
 * [x] **eBPF full syscall coverage** — `mmap`, `mprotect`, `shmat` (`SHM_EXEC`), `execve`
-* [ ] Capstone disassembly integration (shellcode pattern detection)
+* [x] **Disassembly + shellcode detection** (objdump + pattern scanning)
 * [ ] YARA rule-based detection pattern matching
 * [ ] Multi-process coordinated attack scenarios
 * [ ] `--watch` headless mode (continuous monitoring without TUI)
