@@ -41,6 +41,9 @@ Common RWX scenarios include:
 * Automatic strings report generation
 * Automatic hexadecimal preview generation
 * SAFE / RWX ALERT classification
+* **Confidence-based alert levels** (LOW / MEDIUM / CRITICAL)
+* **JIT engine detection** (V8, SpiderMonkey, LuaJIT, Mono, .NET, JVM, Dart)
+* **`--silent-jit` flag** to suppress JIT false positives
 * Low-overhead live analysis
 * Live regex memory hunting (`--live <PID> <pattern>`)
 * eBPF real-time RWX telemetry (`--bpf`, requires root + libbpf)
@@ -50,12 +53,12 @@ Common RWX scenarios include:
 ## ● Example Output
 
 ```text id="kex2m1"
- PID    PROCESS              STATUS          MAP_ADDR
- 1132   python3              RWX ALERT       7fc163862000
- 1135   fail2ban-server      RWX ALERT       7f59a964f000
- 1426   Xorg                 SAFE            n/a
+ PID    PROCESS              STATUS       CONFIDENCE  MAP_ADDR
+ 1132   python3              RWX ALERT    LOW         7fc163862000
+ 1135   fail2ban-server      RWX ALERT    CRITICAL    7f59a964f000
+ 1426   Xorg                 SAFE         SAFE        n/a
 
- [ENTER] ANALYZE | [Q] EXIT | ALERTS: 12
+ [ENTER] ANALYZE | [Q] EXIT | ALERTS: 12 | BPF: OFF
 ```
 
 ---
@@ -105,6 +108,9 @@ sudo make install
 
 # Standard execution (TUI)
 sudo ./kscanner
+
+# Suppress JIT engine false positives (browsers, Node.js, etc.)
+sudo ./kscanner --silent-jit
 
 # JSON/CSV export (headless)
 sudo ./kscanner --json
@@ -286,8 +292,15 @@ K-Scanner is designed for safe live-response environments:
 * [x] JSON/CSV Export
 * [x] Live Regex Memory Hunting (`--live`)
 * [x] eBPF Real-time RWX Telemetry (`--bpf`)
+* [x] **Confidence-based alert classification** (LOW / MEDIUM / CRITICAL)
+* [x] **JIT engine auto-detection** (V8, SpiderMonkey, LuaJIT, .NET, JVM, Dart)
+* [x] **`--silent-jit`** — suppress JIT false positives
+* [ ] eBPF full syscall coverage (`mremap`, `shmat`, `execve`)
+* [ ] Capstone disassembly integration (shellcode pattern detection)
 * [ ] YARA rule-based detection pattern matching
 * [ ] Multi-process coordinated attack scenarios
+* [ ] `--watch` headless mode (continuous monitoring without TUI)
+* [ ] PKGBUILD / AUR package
 * [ ] Remote API / gRPC endpoint for SIEM integration
 * [ ] Container-aware deep inspection (Docker/k8s cgroup correlation)
 

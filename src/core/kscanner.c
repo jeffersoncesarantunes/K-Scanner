@@ -38,24 +38,48 @@ static void write_hex_dump(const char *in_path, const char *out_path, size_t max
     fclose(out);
 }
 
-static const char* map_context_tag(const char* path, int* is_suspicious) {
-    *is_suspicious = 0;
-    if (path == NULL || strlen(path) == 0 || strcmp(path, "[Anonymous/Heap]") == 0) {
-        *is_suspicious = 1;
-        return "ANON_BLOB";
+static ConfidenceLevel map_context_tag(const char* path, char *out_tag, size_t tag_size) {
+    if (path == NULL || path[0] == '\0' || strcmp(path, "[Anonymous/Heap]") == 0) {
+        snprintf(out_tag, tag_size, "ANON_BLOB");
+        return CONFIDENCE_CRITICAL;
     }
-    if (strstr(path, "js-executable")) return "JIT_ENGINE";
-    if (strstr(path, "heap") || strstr(path, "[heap]")) return "DYNAMIC_MEM";
+    if (strstr(path, "js-executable") ||
+        strstr(path, "libv8") ||
+        strstr(path, "libnode") ||
+        strstr(path, "libmozjs") ||
+        strstr(path, "libjavascriptcore") ||
+        strstr(path, "libluajit") ||
+        strstr(path, "libmono") ||
+        strstr(path, "libcoreclr") ||
+        strstr(path, "libjvm") ||
+        strstr(path, "libpypy") ||
+        strstr(path, "libdart")) {
+        snprintf(out_tag, tag_size, "JIT_ENGINE");
+        return CONFIDENCE_LOW;
+    }
+    if (strstr(path, "ld-")) {
+        snprintf(out_tag, tag_size, "DYN_LINKER");
+        return CONFIDENCE_LOW;
+    }
+    if (strstr(path, "heap") || strstr(path, "[heap]")) {
+        snprintf(out_tag, tag_size, "DYNAMIC_MEM");
+        return CONFIDENCE_CRITICAL;
+    }
     if (strstr(path, "stack") || strstr(path, "[stack]")) {
-        *is_suspicious = 1;
-        return "PROC_STACK";
+        snprintf(out_tag, tag_size, "PROC_STACK");
+        return CONFIDENCE_SUSPICIOUS;
     }
-    if (strstr(path, "/usr/lib") || strstr(path, ".so")) return "SYSTEM_LIB";
+    if (strstr(path, "/usr/lib") || strstr(path, ".so") ||
+        strstr(path, "[vdso]") || strstr(path, "[vvar]")) {
+        snprintf(out_tag, tag_size, "SYSTEM_LIB");
+        return CONFIDENCE_SUSPICIOUS;
+    }
     if (strstr(path, "/tmp") || strstr(path, "/dev/shm")) {
-        *is_suspicious = 1;
-        return "VOLATILE_FS";
+        snprintf(out_tag, tag_size, "VOLATILE_FS");
+        return CONFIDENCE_SUSPICIOUS;
     }
-    return "MAPPED_FILE";
+    snprintf(out_tag, tag_size, "MAPPED_FILE");
+    return CONFIDENCE_CRITICAL;
 }
 
 static void dump_memory_region(int pid, char *addr_str) {
@@ -126,7 +150,7 @@ static void dump_memory_region(int pid, char *addr_str) {
     free(buffer);
 }
 
-static int check_mem_rwx(int pid, char *out_info, char *out_addr) {
+static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLevel *out_conf) {
     char path[256], line[512], addr[64], perms[8], pathname[256];
     int found_count = 0;
     char raw_origin[256] = "";
@@ -148,10 +172,11 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr) {
     }
     fclose(f);
     if (found_count > 0) {
-        int is_suspicious = 0;
-        const char* tag = map_context_tag(raw_origin, &is_suspicious);
+        char tag[32];
+        *out_conf = map_context_tag(raw_origin, tag, sizeof(tag));
         snprintf(out_info, 128, "%02dx %s", found_count, tag);
     } else {
+        *out_conf = CONFIDENCE_SAFE;
         strcpy(out_info, "STABLE");
         strcpy(out_addr, "n/a");
     }
@@ -172,7 +197,7 @@ static void get_process_name(int pid, char *out_name) {
     }
 }
 
-int run_scan_formatted(ExportFormat format) {
+int run_scan_formatted(ExportFormat format, int silent_jit) {
     DIR *dir;
     struct dirent *entry;
     char temp_name[256];
@@ -191,11 +216,13 @@ int run_scan_formatted(ExportFormat format) {
         get_process_name(pid, temp_name);
         strncpy(records[count].process_name, temp_name, 256);
         char rwx_details[128], rwx_addr[64];
-        int violations = check_mem_rwx(pid, rwx_details, rwx_addr);
+        ConfidenceLevel conf;
+        int violations = check_mem_rwx(pid, rwx_details, rwx_addr, &conf);
+        records[count].confidence = conf;
         strncpy(records[count].status, (violations > 0) ? "RWX ALERT" : "SAFE", 64);
         strncpy(records[count].info_path, rwx_details, 512);
         strncpy(records[count].mem_addr, rwx_addr, 64);
-        if (violations > 0) rwx_total++;
+        if (violations > 0 && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
         count++;
     }
     closedir(dir);
@@ -259,7 +286,7 @@ int run_scan_formatted(ExportFormat format) {
     return 0;
 }
 
-int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf)
+int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf, int silent_jit)
 {
     (void)format;
     DIR *dir;
@@ -280,11 +307,13 @@ int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf)
         get_process_name(pid, temp_name);
         strncpy(records[count].process_name, temp_name, 256);
         char rwx_details[128], rwx_addr[64];
-        int violations = check_mem_rwx(pid, rwx_details, rwx_addr);
+        ConfidenceLevel conf;
+        int violations = check_mem_rwx(pid, rwx_details, rwx_addr, &conf);
+        records[count].confidence = conf;
         strncpy(records[count].status, (violations > 0) ? "RWX ALERT" : "SAFE", 64);
         strncpy(records[count].info_path, rwx_details, 512);
         strncpy(records[count].mem_addr, rwx_addr, 64);
-        if (violations > 0) rwx_total++;
+        if (violations > 0 && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
         count++;
     }
     closedir(dir);
