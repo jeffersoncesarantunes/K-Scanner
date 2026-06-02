@@ -14,6 +14,69 @@
 #include "tui_engine.h"
 #include "bpf_telemetry.h"
 
+static const char *g_yara_rule = NULL;
+
+void set_yara_rule_path(const char *path) {
+    g_yara_rule = path;
+}
+
+static void get_container_id(int pid, char *out, size_t out_size) {
+    char path[256], line[256];
+    char *p;
+    size_t l;
+    snprintf(path, sizeof(path), "/proc/%d/cgroup", pid);
+    FILE *f = fopen(path, "r");
+    if (!f) { out[0] = '\0'; return; }
+    out[0] = '\0';
+    while (fgets(line, sizeof(line), f)) {
+        if ((p = strstr(line, "docker-"))) {
+            p += 7;
+            char *end = strchr(p, '.');
+            if (end) {
+                l = (size_t)(end - p);
+                if (l >= out_size) l = out_size - 1;
+                memcpy(out, p, l); out[l] = '\0'; break;
+            }
+        }
+        if ((p = strstr(line, "docker/"))) {
+            p += 7;
+            l = strcspn(p, "\n");
+            if (l >= out_size) l = out_size - 1;
+            memcpy(out, p, l); out[l] = '\0'; break;
+        }
+        if ((p = strstr(line, "kubepods"))) {
+            char *ls = NULL;
+            for (char *c = p; *c && *c != '\n'; c++) { if (*c == '/') ls = c; }
+            if (ls && ls[1]) {
+                l = strcspn(ls + 1, "\n");
+                if (l >= out_size) l = out_size - 1;
+                memcpy(out, ls + 1, l); out[l] = '\0'; break;
+            }
+        }
+        if ((p = strstr(line, "/lxc/"))) {
+            p += 5;
+            l = strcspn(p, "\n");
+            if (l >= out_size) l = out_size - 1;
+            memcpy(out, p, l); out[l] = '\0'; break;
+        }
+    }
+    fclose(f);
+}
+
+static void scan_with_yara(const char *dump_path, const char *rule_path, const char *out_path) {
+    pid_t child = fork();
+    if (child == 0) {
+        int fd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        if (fd == -1) _exit(1);
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
+        execlp("yara", "yara", "-w", rule_path, dump_path, NULL);
+        _exit(1);
+    }
+    int st;
+    waitpid(child, &st, 0);
+}
+
 static void write_hex_dump(const char *in_path, const char *out_path, size_t max_lines) {
     FILE *in = fopen(in_path, "rb");
     if (!in) return;
@@ -232,6 +295,10 @@ static void dump_memory_region(int pid, char *addr_str) {
             write_disassembly_file(buffer, size, out_path, start);
             snprintf(out_path, sizeof(out_path), "build/dumps/%s.shellcode.txt", file_name);
             scan_shellcode_patterns(buffer, size, out_path);
+            if (g_yara_rule) {
+                snprintf(out_path, sizeof(out_path), "build/dumps/%s.yara.txt", file_name);
+                scan_with_yara(fpath, g_yara_rule, out_path);
+            }
         }
     }
     close(fd);
@@ -310,6 +377,7 @@ int run_scan_formatted(ExportFormat format, int silent_jit) {
         strncpy(records[count].status, (violations > 0) ? "RWX ALERT" : "SAFE", 64);
         strncpy(records[count].info_path, rwx_details, 512);
         strncpy(records[count].mem_addr, rwx_addr, 64);
+        get_container_id(pid, records[count].container_id, sizeof(records[count].container_id));
         if (violations > 0 && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
         count++;
     }
@@ -320,8 +388,11 @@ int run_scan_formatted(ExportFormat format, int silent_jit) {
         while (running) {
             update_dashboard(records, count, selected);
             attron(COLOR_PAIR(3) | A_BOLD);
-            mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | TARGET: %-15.15s (PID: %-6d)", 
-                     rwx_total, records[selected].process_name, records[selected].pid);
+            char cnt_info[32] = "";
+            if (records[selected].container_id[0])
+                snprintf(cnt_info, sizeof(cnt_info), " | CTN:%.12s", records[selected].container_id);
+            mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | TARGET: %-15.15s (PID: %-6d)%s", 
+                     rwx_total, records[selected].process_name, records[selected].pid, cnt_info);
             for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
             attroff(COLOR_PAIR(3) | A_BOLD);
             refresh();
@@ -401,6 +472,7 @@ int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf, int sile
         strncpy(records[count].status, (violations > 0) ? "RWX ALERT" : "SAFE", 64);
         strncpy(records[count].info_path, rwx_details, 512);
         strncpy(records[count].mem_addr, rwx_addr, 64);
+        get_container_id(pid, records[count].container_id, sizeof(records[count].container_id));
         if (violations > 0 && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
         count++;
     }
@@ -436,10 +508,13 @@ int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf, int sile
         }
 
         attron(COLOR_PAIR(3) | A_BOLD);
-        mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | BPF: %s | TARGET: %-15.15s (PID: %-6d)",
+        char cnt_info[32] = "";
+        if (records[selected].container_id[0])
+            snprintf(cnt_info, sizeof(cnt_info), " | CTN:%.12s", records[selected].container_id);
+        mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | BPF: %s | TARGET: %-15.15s (PID: %-6d)%s",
                  rwx_total,
                  (bpf && bpf->active) ? "ON " : "OFF",
-                 records[selected].process_name, records[selected].pid);
+                 records[selected].process_name, records[selected].pid, cnt_info);
         for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
         attroff(COLOR_PAIR(3) | A_BOLD);
         refresh();
@@ -519,6 +594,7 @@ int run_watch_loop(ExportFormat format, int silent_jit) {
             strncpy(records[count].status, v ? "RWX ALERT" : "SAFE", 64);
             strncpy(records[count].info_path, rwx_info, 512);
             strncpy(records[count].mem_addr, rwx_addr, 64);
+            get_container_id(pid, records[count].container_id, sizeof(records[count].container_id));
             if (v && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
             count++;
         }

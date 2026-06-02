@@ -48,6 +48,8 @@ Common RWX scenarios include:
 * **`--silent-jit` flag** to suppress JIT false positives
 * **`--watch` headless continuous monitoring** (2-second cycles, alerts only + summary)
 * **PKGBUILD** / AUR package available
+* **Container-aware detection** — identifies Docker, Kubernetes, and LXC processes via cgroup
+* **`--yara <rule.yara>`** — scan forensic dumps against YARA rules (requires `yara`)
 * Low-overhead live analysis
 * Live regex memory hunting (`--live <PID> <pattern>`)
 * eBPF real-time RWX telemetry (`--bpf`, requires root + libbpf)
@@ -133,6 +135,12 @@ sudo ./kscanner --watch
 # Continuous monitoring in JSON-Lines format
 sudo ./kscanner --watch --json
 
+# TUI mode with YARA rule scanning on forensic dumps
+sudo ./kscanner --yara /path/to/rules.yara
+
+# TUI with BPF telemetry + YARA + container awareness (all flags combined)
+sudo ./kscanner --bpf --silent-jit --yara myrules.yara
+
 # Uninstall
 sudo make uninstall
 ```
@@ -183,6 +191,7 @@ Each memory extraction generates:
 * Hexadecimal preview (`.hex.txt`)
 * x86-64 disassembly listing (`.disasm.txt`)
 * Shellcode pattern analysis (`.shellcode.txt`)
+* YARA rule matches (`.yara.txt`, when `--yara` is active)
 
 ---
 
@@ -236,6 +245,7 @@ K-Scanner is designed for safe live-response environments:
 * ncurses
 * binutils
 * coreutils
+* yara (optional, required for `--yara` flag)
 * UTF-8 compatible terminal
 * Root privileges
 
@@ -310,12 +320,10 @@ K-Scanner is designed for safe live-response environments:
 * [x] **`--silent-jit`** — suppress JIT false positives
 * [x] **eBPF full syscall coverage** — `mmap`, `mprotect`, `shmat` (`SHM_EXEC`), `execve`
 * [x] **Disassembly + shellcode detection** (objdump + pattern scanning)
-* [ ] YARA rule-based detection pattern matching
+* [x] YARA rule-based detection pattern matching (`--yara <rule.yara>`)
+* [x] Container-aware deep inspection (Docker/k8s/LXC cgroup correlation)
 * [ ] Multi-process coordinated attack scenarios
-* [x] `--watch` headless mode (continuous monitoring without TUI)
-* [x] PKGBUILD / AUR package
 * [ ] Remote API / gRPC endpoint for SIEM integration
-* [ ] Container-aware deep inspection (Docker/k8s cgroup correlation)
 
 ---
 

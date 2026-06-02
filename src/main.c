@@ -18,6 +18,7 @@ static void print_main_usage(void) {
     printf("  --bpf                 Enable eBPF real-time RWX telemetry (requires root)\n");
     printf("  --silent-jit          Suppress JIT engine RWX from alert count (reduce FP)\n");
     printf("  --watch               Continuous headless monitoring (2s cycles, Ctrl+C to exit)\n");
+    printf("  --yara <rule.yara>    Scan forensic dumps with YARA rules (requires yara)\n");
     printf("  --help                Show this help message\n");
 }
 
@@ -41,6 +42,7 @@ int main(int argc, char *argv[]) {
     int use_bpf = 0;
     int silent_jit = 0;
     int use_watch = 0;
+    const char *yara_rule = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--live") == 0) {
@@ -66,6 +68,13 @@ int main(int argc, char *argv[]) {
             use_tui = 0;
         } else if (strcmp(argv[i], "--silent-jit") == 0) {
             silent_jit = 1;
+        } else if (strcmp(argv[i], "--yara") == 0) {
+            if (i + 1 < argc) {
+                yara_rule = argv[++i];
+            } else {
+                fprintf(stderr, "Error: --yara requires a rule file path\n");
+                return 1;
+            }
         } else if (strcmp(argv[i], "--help") == 0) {
             print_main_usage();
             return 0;
@@ -78,6 +87,8 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
+
+    if (yara_rule) set_yara_rule_path(yara_rule);
 
     if (use_watch) {
         run_watch_loop(selected_format, silent_jit);

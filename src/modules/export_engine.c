@@ -18,7 +18,7 @@ void export_header(ExportFormat format) {
         export_first_json = 1;
         printf("[\n");
     } else if (format == EXPORT_CSV) {
-        printf("PID,PROCESS_NAME,STATUS,CONFIDENCE,INFO_PATH,MEM_ADDR\n");
+        printf("PID,PROCESS_NAME,STATUS,CONFIDENCE,INFO_PATH,MEM_ADDR,CONTAINER_ID\n");
     }
 }
 
@@ -32,16 +32,18 @@ void export_record(const ForensicRecord *record, ExportFormat format) {
             printf("    \"status\": \"%s\",\n", record->status);
             printf("    \"confidence\": \"%s\",\n", conf_level_str(record->confidence));
             printf("    \"info\": \"%s\",\n", record->info_path);
-            printf("    \"addr\": \"%s\"\n", record->mem_addr);
+            printf("    \"addr\": \"%s\",\n", record->mem_addr);
+            printf("    \"container\": \"%s\"\n", record->container_id);
             printf("  }");
             export_first_json = 0;
             break;
 
         case EXPORT_CSV:
-            printf("%d,%s,%s,%s,%s,%s\n", 
+            printf("%d,%s,%s,%s,%s,%s,%s\n", 
                    record->pid, record->process_name, 
                    record->status, conf_level_str(record->confidence),
-                   record->info_path, record->mem_addr);
+                   record->info_path, record->mem_addr,
+                   record->container_id);
             break;
 
         case EXPORT_TERMINAL:

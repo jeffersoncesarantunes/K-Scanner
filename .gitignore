@@ -29,6 +29,7 @@ results/
 *.hex.txt
 *.disasm.txt
 *.shellcode.txt
+*.yara.txt
 *.json
 *.csv
 

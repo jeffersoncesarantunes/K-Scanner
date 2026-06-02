@@ -22,6 +22,7 @@ typedef struct {
     char status[64];
     char info_path[512];
     char mem_addr[64];
+    char container_id[48];
     ConfidenceLevel confidence;
 } ForensicRecord;
 
