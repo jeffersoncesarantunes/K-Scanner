@@ -87,8 +87,15 @@ int main(int argc, char *argv[]) {
             BpfRwxEvent bpf_ev;
             int n = bpf_telemetry_drain_ring(&bpf_state, &bpf_ev, 1);
             if (n > 0) {
-                printf("%s[BPF] RWX allocation — PID %d (%s) @ %s%s\n",
-                       CLR_RED, bpf_ev.pid, bpf_ev.comm, bpf_ev.addr, CLR_RESET);
+                const char *sname = "?";
+                switch (bpf_ev.syscall_nr) {
+                    case 9:  sname = "mmap"; break;
+                    case 10: sname = "mprotect"; break;
+                    case 30: sname = "shmat"; break;
+                    case 59: sname = "execve"; break;
+                }
+                printf("%s[BPF] %s — PID %d (%s) @ %s%s\n",
+                       CLR_RED, sname, bpf_ev.pid, bpf_ev.comm, bpf_ev.addr, CLR_RESET);
             }
         }
     }

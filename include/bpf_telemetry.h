@@ -12,6 +12,7 @@ typedef struct {
     uint64_t raw_addr;
     uint64_t raw_len;
     uint64_t raw_prot;
+    uint64_t syscall_nr;
     char     comm[BPF_EVENT_COMM_LEN];
 } BpfRwxEvent;
 

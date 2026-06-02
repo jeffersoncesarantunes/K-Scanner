@@ -329,9 +329,20 @@ int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf, int sile
         if (bpf && bpf->active && bpf->ring_head != bpf->ring_tail) {
             BpfRwxEvent bpf_ev;
             if (bpf_telemetry_drain_ring(bpf, &bpf_ev, 1) > 0) {
+                const char *sname = "?";
+                switch (bpf_ev.syscall_nr) {
+                    case 9:  sname = "mmap"; break;
+                    case 10: sname = "mprotect"; break;
+                    case 30: sname = "shmat"; break;
+                    case 59: sname = "execve"; break;
+                }
                 attron(COLOR_PAIR(2) | A_BOLD);
-                mvprintw(LINES - 2, 2, " [BPF] RWX by PID %d (%-8s) @ %s       ",
-                         bpf_ev.pid, bpf_ev.comm, bpf_ev.addr);
+                if (bpf_ev.syscall_nr == 59)
+                    mvprintw(LINES - 2, 2, " [BPF] EXEC PID %d (%-8s)                    ",
+                             bpf_ev.pid, bpf_ev.comm);
+                else
+                    mvprintw(LINES - 2, 2, " [BPF] %s PID %d (%-8s) @ %s       ",
+                             sname, bpf_ev.pid, bpf_ev.comm, bpf_ev.addr);
                 attroff(COLOR_PAIR(2) | A_BOLD);
             }
         }

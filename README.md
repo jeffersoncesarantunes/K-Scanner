@@ -47,6 +47,7 @@ Common RWX scenarios include:
 * Low-overhead live analysis
 * Live regex memory hunting (`--live <PID> <pattern>`)
 * eBPF real-time RWX telemetry (`--bpf`, requires root + libbpf)
+* **eBPF full syscall coverage** — `mmap`, `mprotect`, `shmat` (`SHM_EXEC`), `execve`
 
 ---
 
@@ -295,7 +296,7 @@ K-Scanner is designed for safe live-response environments:
 * [x] **Confidence-based alert classification** (LOW / MEDIUM / CRITICAL)
 * [x] **JIT engine auto-detection** (V8, SpiderMonkey, LuaJIT, .NET, JVM, Dart)
 * [x] **`--silent-jit`** — suppress JIT false positives
-* [ ] eBPF full syscall coverage (`mremap`, `shmat`, `execve`)
+* [x] **eBPF full syscall coverage** — `mmap`, `mprotect`, `shmat` (`SHM_EXEC`), `execve`
 * [ ] Capstone disassembly integration (shellcode pattern detection)
 * [ ] YARA rule-based detection pattern matching
 * [ ] Multi-process coordinated attack scenarios

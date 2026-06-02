@@ -45,6 +45,7 @@ static void handle_event(void *cb_arg, int cpu, void *data, unsigned int sz)
         uint64_t addr;
         uint64_t len;
         uint64_t prot;
+        uint64_t syscall_nr;
         char     comm[16];
     } *ev = (const void *)data;
 
@@ -54,12 +55,16 @@ static void handle_event(void *cb_arg, int cpu, void *data, unsigned int sz)
     if (head == s->ring_tail) return;
 
     BpfRwxEvent *slot = &s->ring[s->ring_head];
-    slot->pid       = (int)(ev->pid);
-    slot->raw_addr  = ev->addr;
-    slot->raw_len   = ev->len;
-    slot->raw_prot  = ev->prot;
-    snprintf(slot->addr, sizeof(slot->addr), "0x%lx",
-             (unsigned long)ev->addr);
+    slot->pid        = (int)(ev->pid);
+    slot->raw_addr   = ev->addr;
+    slot->raw_len    = ev->len;
+    slot->raw_prot   = ev->prot;
+    slot->syscall_nr = ev->syscall_nr;
+    if (ev->addr)
+        snprintf(slot->addr, sizeof(slot->addr), "0x%lx",
+                 (unsigned long)ev->addr);
+    else
+        slot->addr[0] = '\0';
     memcpy(slot->comm, ev->comm, sizeof(slot->comm) - 1);
     slot->comm[sizeof(slot->comm) - 1] = '\0';
 
