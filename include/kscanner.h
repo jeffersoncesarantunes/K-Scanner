@@ -6,5 +6,6 @@
 
 int run_scan_formatted(ExportFormat format, int silent_jit);
 int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf, int silent_jit);
+int run_watch_loop(ExportFormat format, int silent_jit);
 
 #endif

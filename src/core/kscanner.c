@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <ncurses.h>
 #include "kscanner.h"
 #include "export_engine.h"
@@ -483,6 +484,76 @@ int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf, int sile
     }
 
     free(records);
+    return 0;
+}
+
+int run_watch_loop(ExportFormat format, int silent_jit) {
+    int cycle = 0;
+    int max_proc = 4096;
+    char ts[64];
+
+    while (1) {
+        if (feof(stdout) || ferror(stdout)) break;
+        cycle++;
+
+        time_t t = time(NULL);
+        strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", localtime(&t));
+
+        ForensicRecord *records = malloc(sizeof(ForensicRecord) * max_proc);
+        if (!records) break;
+        int count = 0, rwx_total = 0;
+
+        DIR *dir = opendir("/proc");
+        if (!dir) { free(records); break; }
+        struct dirent *entry;
+        while ((entry = readdir(dir)) && count < max_proc) {
+            if (!isdigit(entry->d_name[0])) continue;
+            int pid = atoi(entry->d_name);
+            char pname[256], rwx_info[128], rwx_addr[64];
+            ConfidenceLevel conf;
+            get_process_name(pid, pname);
+            int v = check_mem_rwx(pid, rwx_info, rwx_addr, &conf);
+            records[count].pid = pid;
+            records[count].confidence = conf;
+            strncpy(records[count].process_name, pname, 256);
+            strncpy(records[count].status, v ? "RWX ALERT" : "SAFE", 64);
+            strncpy(records[count].info_path, rwx_info, 512);
+            strncpy(records[count].mem_addr, rwx_addr, 64);
+            if (v && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
+            count++;
+        }
+        closedir(dir);
+
+        if (format == EXPORT_TERMINAL) {
+            printf("\n=== CYCLE %d @ %s ===\n", cycle, ts);
+            printf("%-8s %-20s %-12s %-10s %s\n",
+                   "PID", "PROCESS", "STATUS", "CONFIDENCE", "INFO");
+            for (int i = 0; i < count; i++) {
+                if (strcmp(records[i].status, "RWX ALERT") != 0) continue;
+                char cl[12];
+                switch (records[i].confidence) {
+                    case 0: strcpy(cl, "SAFE"); break;
+                    case 1: strcpy(cl, "LOW"); break;
+                    case 2: strcpy(cl, "MEDIUM"); break;
+                    case 3: strcpy(cl, "CRITICAL"); break;
+                    default: strcpy(cl, "?"); break;
+                }
+                printf("%-8d %-20.20s %-12s %-10s %s\n",
+                       records[i].pid, records[i].process_name,
+                       records[i].status, cl, records[i].info_path);
+            }
+            printf("--- ALERTS: %d / SCANNED: %d ---\n", rwx_total, count);
+        } else {
+            export_header(format);
+            for (int i = 0; i < count; i++)
+                export_record(&records[i], format);
+            export_footer(format);
+        }
+
+        free(records);
+        fflush(stdout);
+        sleep(2);
+    }
     return 0;
 }
 

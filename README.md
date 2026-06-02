@@ -46,6 +46,8 @@ Common RWX scenarios include:
 * **Confidence-based alert levels** (LOW / MEDIUM / CRITICAL)
 * **JIT engine detection** (V8, SpiderMonkey, LuaJIT, Mono, .NET, JVM, Dart)
 * **`--silent-jit` flag** to suppress JIT false positives
+* **`--watch` headless continuous monitoring** (2-second cycles, alerts only + summary)
+* **PKGBUILD** / AUR package available
 * Low-overhead live analysis
 * Live regex memory hunting (`--live <PID> <pattern>`)
 * eBPF real-time RWX telemetry (`--bpf`, requires root + libbpf)
@@ -124,6 +126,12 @@ sudo ./kscanner --live <PID> '<regex>'
 
 # eBPF real-time RWX monitoring
 sudo ./kscanner --bpf
+
+# Continuous headless monitoring (2-second cycles, Ctrl+C to exit)
+sudo ./kscanner --watch
+
+# Continuous monitoring in JSON-Lines format
+sudo ./kscanner --watch --json
 
 # Uninstall
 sudo make uninstall
@@ -304,8 +312,8 @@ K-Scanner is designed for safe live-response environments:
 * [x] **Disassembly + shellcode detection** (objdump + pattern scanning)
 * [ ] YARA rule-based detection pattern matching
 * [ ] Multi-process coordinated attack scenarios
-* [ ] `--watch` headless mode (continuous monitoring without TUI)
-* [ ] PKGBUILD / AUR package
+* [x] `--watch` headless mode (continuous monitoring without TUI)
+* [x] PKGBUILD / AUR package
 * [ ] Remote API / gRPC endpoint for SIEM integration
 * [ ] Container-aware deep inspection (Docker/k8s cgroup correlation)
 

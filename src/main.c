@@ -17,6 +17,7 @@ static void print_main_usage(void) {
     printf("  --live <pid> <rgx>    Search for regex pattern in process memory\n");
     printf("  --bpf                 Enable eBPF real-time RWX telemetry (requires root)\n");
     printf("  --silent-jit          Suppress JIT engine RWX from alert count (reduce FP)\n");
+    printf("  --watch               Continuous headless monitoring (2s cycles, Ctrl+C to exit)\n");
     printf("  --help                Show this help message\n");
 }
 
@@ -39,6 +40,7 @@ int main(int argc, char *argv[]) {
     int use_tui = 1;
     int use_bpf = 0;
     int silent_jit = 0;
+    int use_watch = 0;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--live") == 0) {
@@ -59,6 +61,9 @@ int main(int argc, char *argv[]) {
             use_tui = 0;
         } else if (strcmp(argv[i], "--bpf") == 0) {
             use_bpf = 1;
+        } else if (strcmp(argv[i], "--watch") == 0) {
+            use_watch = 1;
+            use_tui = 0;
         } else if (strcmp(argv[i], "--silent-jit") == 0) {
             silent_jit = 1;
         } else if (strcmp(argv[i], "--help") == 0) {
@@ -72,6 +77,12 @@ int main(int argc, char *argv[]) {
         if (handle_bpf_flag(&bpf_state) != 0) {
             return 1;
         }
+    }
+
+    if (use_watch) {
+        run_watch_loop(selected_format, silent_jit);
+        if (use_bpf) bpf_telemetry_shutdown(&bpf_state);
+        return 0;
     }
 
     if (use_tui) {
