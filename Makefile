@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -Iinclude -O2 -std=c99 -D_DEFAULT_SOURCE
+CFLAGS = -Wall -Wextra -Wpedantic -Iinclude -O2 -std=c99 -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector-strong
 LDFLAGS = -lncurses
 OBJ_DIR = build/obj
 BPF_DIR = build/bpf

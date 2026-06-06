@@ -70,7 +70,7 @@ static void scan_with_yara(const char *dump_path, const char *rule_path, const c
         if (fd == -1) _exit(1);
         dup2(fd, STDOUT_FILENO);
         close(fd);
-        execlp("yara", "yara", "-w", rule_path, dump_path, NULL);
+        execl("/usr/bin/yara", "yara", "-w", rule_path, dump_path, NULL);
         _exit(1);
     }
     int st;
@@ -177,7 +177,7 @@ static void write_disassembly_file(const void *buf, size_t size, const char *out
         if (fd == -1) _exit(1);
         dup2(fd, STDOUT_FILENO);
         close(fd);
-        execlp("objdump", "objdump", "-D", "-b", "binary", "-m", "i386", "-M", addr_opt, tmp_path, NULL);
+        execl("/usr/bin/objdump", "objdump", "-D", "-b", "binary", "-m", "i386", "-M", addr_opt, tmp_path, NULL);
         _exit(1);
     }
     int st;
@@ -274,7 +274,7 @@ static void dump_memory_region(int pid, char *addr_str) {
                 if (ofd == -1) _exit(1);
                 dup2(ofd, STDOUT_FILENO);
                 close(ofd);
-                execlp("sha256sum", "sha256sum", fpath, NULL);
+                execl("/usr/bin/sha256sum", "sha256sum", fpath, NULL);
                 _exit(1);
             }
             waitpid(child, &st, 0);
@@ -285,7 +285,7 @@ static void dump_memory_region(int pid, char *addr_str) {
                 if (ofd == -1) _exit(1);
                 dup2(ofd, STDOUT_FILENO);
                 close(ofd);
-                execlp("strings", "strings", "-n", "6", fpath, NULL);
+                execl("/usr/bin/strings", "strings", "-n", "6", fpath, NULL);
                 _exit(1);
             }
             waitpid(child, &st, 0);
