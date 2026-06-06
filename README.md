@@ -145,6 +145,18 @@ sudo ./kscanner --bpf --silent-jit --yara myrules.yara
 sudo make uninstall
 ```
 
+### YARA Rule Scanning
+
+[YARA](https://virustotal.github.io/yara/) is a pattern-matching engine for identifying malware samples. When passed via `--yara`, K-Scanner scans forensic memory dumps against your YARA rules for known threat patterns.
+
+```bash
+# Install YARA (optional, required for --yara)
+# Arch Linux
+sudo pacman -S yara
+# Debian/Ubuntu
+sudo apt install yara
+```
+
 ---
 
 ## ● Investigation & Post-Analysis Workflow
