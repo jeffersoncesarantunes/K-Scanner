@@ -151,10 +151,7 @@ sudo make uninstall
 
 ```bash
 # Install YARA (optional, required for --yara)
-# Arch Linux
 sudo pacman -S yara
-# Debian/Ubuntu
-sudo apt install yara
 ```
 
 ---
