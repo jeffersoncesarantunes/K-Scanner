@@ -257,8 +257,8 @@ static void dump_memory_region(int pid, char *addr_str) {
         return;
     }
     if (pread(fd, buffer, size, (off_t)start) == (ssize_t)size) {
-        mkdir("build", 0755);
-        mkdir("build/dumps", 0755);
+        mkdir("build", 0750);
+        mkdir("build/dumps", 0750);
         snprintf(file_name, sizeof(file_name), "pid_%d_%lx.bin", pid, start);
         snprintf(out_path, sizeof(out_path), "build/dumps/%s", file_name);
         int out_fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -317,10 +317,10 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLeve
             pathname[0] = '\0';
             sscanf(line, "%63s %7s %*s %*s %*s %255s", addr, perms, pathname);
             if (found_count == 0) {
-                strncpy(raw_origin, pathname, sizeof(raw_origin));
+                snprintf(raw_origin, sizeof(raw_origin), "%s", pathname);
                 char start_addr_hex[18];
                 sscanf(addr, "%17[^ -]", start_addr_hex);
-                strncpy(out_addr, start_addr_hex, 64);
+                snprintf(out_addr, 64, "%s", start_addr_hex);
             }
             found_count++;
         }
@@ -348,7 +348,7 @@ static void get_process_name(int pid, char *out_name) {
         }
         fclose(f);
     } else {
-        strncpy(out_name, "unknown", 33);
+        snprintf(out_name, 33, "%s", "unknown");
     }
 }
 
@@ -366,17 +366,17 @@ int run_scan_formatted(ExportFormat format, int silent_jit) {
     }
     while ((entry = readdir(dir)) != NULL && count < 1024) {
         if (!isdigit(entry->d_name[0])) continue;
-        int pid = atoi(entry->d_name);
+        int pid = (int)strtol(entry->d_name, NULL, 10);
         records[count].pid = pid;
         get_process_name(pid, temp_name);
-        strncpy(records[count].process_name, temp_name, 256);
+        snprintf(records[count].process_name, 256, "%s", temp_name);
         char rwx_details[128], rwx_addr[64];
         ConfidenceLevel conf;
         int violations = check_mem_rwx(pid, rwx_details, rwx_addr, &conf);
         records[count].confidence = conf;
-        strncpy(records[count].status, (violations > 0) ? "RWX ALERT" : "SAFE", 64);
-        strncpy(records[count].info_path, rwx_details, 512);
-        strncpy(records[count].mem_addr, rwx_addr, 64);
+        snprintf(records[count].status, 64, "%s", (violations > 0) ? "RWX ALERT" : "SAFE");
+        snprintf(records[count].info_path, 512, "%s", rwx_details);
+        snprintf(records[count].mem_addr, 64, "%s", rwx_addr);
         get_container_id(pid, records[count].container_id, sizeof(records[count].container_id));
         if (violations > 0 && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
         count++;
@@ -461,17 +461,17 @@ int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf, int sile
     }
     while ((entry = readdir(dir)) != NULL && count < 1024) {
         if (!isdigit(entry->d_name[0])) continue;
-        int pid = atoi(entry->d_name);
+        int pid = (int)strtol(entry->d_name, NULL, 10);
         records[count].pid = pid;
         get_process_name(pid, temp_name);
-        strncpy(records[count].process_name, temp_name, 256);
+        snprintf(records[count].process_name, 256, "%s", temp_name);
         char rwx_details[128], rwx_addr[64];
         ConfidenceLevel conf;
         int violations = check_mem_rwx(pid, rwx_details, rwx_addr, &conf);
         records[count].confidence = conf;
-        strncpy(records[count].status, (violations > 0) ? "RWX ALERT" : "SAFE", 64);
-        strncpy(records[count].info_path, rwx_details, 512);
-        strncpy(records[count].mem_addr, rwx_addr, 64);
+        snprintf(records[count].status, 64, "%s", (violations > 0) ? "RWX ALERT" : "SAFE");
+        snprintf(records[count].info_path, 512, "%s", rwx_details);
+        snprintf(records[count].mem_addr, 64, "%s", rwx_addr);
         get_container_id(pid, records[count].container_id, sizeof(records[count].container_id));
         if (violations > 0 && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
         count++;
@@ -583,17 +583,17 @@ int run_watch_loop(ExportFormat format, int silent_jit) {
         struct dirent *entry;
         while ((entry = readdir(dir)) && count < max_proc) {
             if (!isdigit(entry->d_name[0])) continue;
-            int pid = atoi(entry->d_name);
+            int pid = (int)strtol(entry->d_name, NULL, 10);
             char pname[256], rwx_info[128], rwx_addr[64];
             ConfidenceLevel conf;
             get_process_name(pid, pname);
             int v = check_mem_rwx(pid, rwx_info, rwx_addr, &conf);
             records[count].pid = pid;
             records[count].confidence = conf;
-            strncpy(records[count].process_name, pname, 256);
-            strncpy(records[count].status, v ? "RWX ALERT" : "SAFE", 64);
-            strncpy(records[count].info_path, rwx_info, 512);
-            strncpy(records[count].mem_addr, rwx_addr, 64);
+            snprintf(records[count].process_name, 256, "%s", pname);
+            snprintf(records[count].status, 64, "%s", v ? "RWX ALERT" : "SAFE");
+            snprintf(records[count].info_path, 512, "%s", rwx_info);
+            snprintf(records[count].mem_addr, 64, "%s", rwx_addr);
             get_container_id(pid, records[count].container_id, sizeof(records[count].container_id));
             if (v && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
             count++;

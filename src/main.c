@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--live") == 0) {
             if (i + 2 < argc) {
-                int pid = atoi(argv[i+1]);
+                int pid = (int)strtol(argv[i+1], NULL, 10);
                 const char *pattern = argv[i+2];
                 run_live_regex_scan(pid, pattern);
                 return 0;
