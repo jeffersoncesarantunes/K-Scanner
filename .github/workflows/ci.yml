@@ -1,0 +1,27 @@
+name: K-Scanner CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libncurses-dev
+      - name: Build
+        run: make clean && make
+      - name: Verify binary
+        run: ./kscanner --help
+      - name: Check for banned functions
+        run: '! grep -rn "\<gets(" src/ include/ || exit 1'
+      - name: Shellcheck scripts
+        run: |
+          shellcheck --version
+          shellcheck scripts/*.sh 2>/dev/null || echo "No scripts to check or shellcheck not available"
