@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/resource.h>
+
+#ifdef HAVE_LIBBPF
 #include <bpf/libbpf.h>
 #include <bpf/bpf.h>
-#include <sys/resource.h>
 
 
 #define BPF_OBJ_INSTALLED "/usr/local/share/kscanner/rwx_monitor.bpf.o"
@@ -209,3 +211,32 @@ int bpf_telemetry_drain_ring(BpfTelemetryState *state, BpfRwxEvent *out, int max
     }
     return drained;
 }
+
+#else
+
+int bpf_telemetry_init(BpfTelemetryState *state)
+{
+    if (state) {
+        memset(state, 0, sizeof(*state));
+        snprintf(state->error_msg, sizeof(state->error_msg),
+                 "eBPF support not compiled (install libbpf-dev)");
+    }
+    return -1;
+}
+
+void bpf_telemetry_poll(BpfTelemetryState *state) { (void)state; }
+
+void bpf_telemetry_shutdown(BpfTelemetryState *state)
+{
+    if (state) state->active = 0;
+}
+
+int bpf_telemetry_drain_ring(BpfTelemetryState *state, BpfRwxEvent *out, int max)
+{
+    (void)state;
+    (void)out;
+    (void)max;
+    return 0;
+}
+
+#endif
