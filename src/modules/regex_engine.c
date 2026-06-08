@@ -88,7 +88,7 @@ int start_live_regex_hunting(pid_t pid, const char *pattern) {
 }
 
 void dispatch_regex_match(regex_match_t *match) {
-    printf("\n--- DETECÇÃO DE AUDITORIA ---\n");
-    printf("Endereço: 0x%llx | PID: %d\n", match->address_start, match->pid);
-    printf("Contexto: %s\n", match->context_preview);
+    printf("\n--- AUDIT DETECTION ---\n");
+    printf("Address: 0x%llx | PID: %d\n", match->address_start, match->pid);
+    printf("Context: %s\n", match->context_preview);
 }

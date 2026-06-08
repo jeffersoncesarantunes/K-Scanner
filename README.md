@@ -222,13 +222,13 @@ It transforms raw `/proc` telemetry into incident-response-ready intelligence.
 
 ## ● Project in Action
 
-![Live Scan](./Imagens/kscanner1.png)
+![Live Scan](./Images/kscanner1.png)
 *1 - Live forensic mode identifying RWX memory regions in real-time.*
 
-![RWX Detection](./Imagens/kscanner2.png)
+![RWX Detection](./Images/kscanner2.png)
 *2 - Memory triage with automatic extraction of relevant strings.*
 
-![Forensic Extraction](./Imagens/kscanner3.png)
+![Forensic Extraction](./Images/kscanner3.png)
 *3 - Evidence preservation with SHA-256 integrity validation.*
 
 ---
@@ -282,7 +282,7 @@ K-Scanner is designed for safe live-response environments:
 │   └── use_cases.md
 ├── examples/
 │   └── usage.md
-├── Imagens/
+├── Images/
 │   ├── kscanner1.png
 │   ├── kscanner2.png
 │   └── kscanner3.png
