@@ -27,7 +27,7 @@ $(TARGET): $(OBJS)
 	@mkdir -p $(DUMP_DIR) $(BPF_DIR)
 	@$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 	@strip $(TARGET)
-	@echo "🧹 Build successful! 🟢"
+	@echo "🟢 Build successful!"
 
 $(OBJ_DIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
