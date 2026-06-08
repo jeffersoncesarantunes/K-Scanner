@@ -27,7 +27,7 @@ $(TARGET): $(OBJS)
 	@mkdir -p $(DUMP_DIR) $(BPF_DIR)
 	@$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 	@strip $(TARGET)
-	@echo "  Build successful!"
+	@echo "🧹 Build successful! 🟢"
 
 $(OBJ_DIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
@@ -92,11 +92,11 @@ triage:
 
 clean-dumps:
 	@rm -f $(DUMP_DIR)/*.bin $(DUMP_DIR)/*.sha256 $(DUMP_DIR)/*.strings.txt $(DUMP_DIR)/*.hex.txt
-	@echo "  Dumps cleaned."
+	@echo "🧹 Dumps cleaned."
 
 clean:
+	@echo "🧹 Clean."
 	@rm -rf build/
 	@rm -f $(TARGET)
-	@echo "  Clean."
 
 .PHONY: all bpf install uninstall test debug triage clean-dumps clean
