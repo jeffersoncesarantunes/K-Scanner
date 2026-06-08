@@ -43,7 +43,11 @@ int start_live_regex_hunting(pid_t pid, const char *pattern) {
         if (region_size > 100 * 1024 * 1024) continue; 
 
         char *buffer = malloc(region_size);
-        if (!buffer) continue;
+        if (!buffer) {
+            fprintf(stderr, "[!] OOM: pid %d, region 0x%llx-0x%llx (%zu bytes)\n",
+                    pid, start, end, region_size);
+            continue;
+        }
 
         ssize_t bytes_read = pread(mem_fd, buffer, region_size, start);
         

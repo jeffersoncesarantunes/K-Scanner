@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -63,14 +64,21 @@ static void get_container_id(int pid, char *out, size_t out_size) {
     fclose(f);
 }
 
+static void close_inherited_fds(void) {
+    int max_fd = (int)sysconf(_SC_OPEN_MAX);
+    if (max_fd < 0) max_fd = 4096;
+    for (int i = STDERR_FILENO + 1; i < max_fd; i++) close(i);
+}
+
 static void scan_with_yara(const char *dump_path, const char *rule_path, const char *out_path) {
     pid_t child = fork();
     if (child == 0) {
-        int fd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        close_inherited_fds();
+        int fd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0600);
         if (fd == -1) _exit(1);
-        dup2(fd, STDOUT_FILENO);
+        if (dup2(fd, STDOUT_FILENO) == -1) _exit(1);
         close(fd);
-        execl("/usr/bin/yara", "yara", "-w", rule_path, dump_path, NULL);
+        execvp("yara", (char *[]){ "yara", "-w", (char *)rule_path, (char *)dump_path, NULL });
         _exit(1);
     }
     int st;
@@ -173,11 +181,12 @@ static void write_disassembly_file(const void *buf, size_t size, const char *out
 
     pid_t child = fork();
     if (child == 0) {
-        int fd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        close_inherited_fds();
+        int fd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0600);
         if (fd == -1) _exit(1);
-        dup2(fd, STDOUT_FILENO);
+        if (dup2(fd, STDOUT_FILENO) == -1) _exit(1);
         close(fd);
-        execl("/usr/bin/objdump", "objdump", "-D", "-b", "binary", "-m", "i386", "-M", addr_opt, tmp_path, NULL);
+        execvp("objdump", (char *[]){ "objdump", "-D", "-b", "binary", "-m", "i386", "-M", addr_opt, tmp_path, NULL });
         _exit(1);
     }
     int st;
@@ -247,7 +256,9 @@ static void dump_memory_region(int pid, char *addr_str) {
     }
     fclose(f);
     if (!found) return;
+    if (end <= start) return;
     size_t size = end - start;
+    if (size > 256 * 1024 * 1024) return;
     void *buffer = malloc(size);
     if (!buffer) return;
     snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
@@ -261,31 +272,33 @@ static void dump_memory_region(int pid, char *addr_str) {
         mkdir("build/dumps", 0750);
         snprintf(file_name, sizeof(file_name), "pid_%d_%lx.bin", pid, start);
         snprintf(out_path, sizeof(out_path), "build/dumps/%s", file_name);
-        int out_fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        int out_fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
         if (out_fd != -1) {
-            write(out_fd, buffer, size);
+            if (write(out_fd, buffer, size) == -1) { close(out_fd); free(buffer); close(fd); return; }
             close(out_fd);
             snprintf(fpath, sizeof(fpath), "build/dumps/%s", file_name);
             int child, st;
             child = fork();
             if (child == 0) {
+                close_inherited_fds();
                 snprintf(out_path, sizeof(out_path), "build/dumps/%s.sha256", file_name);
-                int ofd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+                int ofd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0600);
                 if (ofd == -1) _exit(1);
-                dup2(ofd, STDOUT_FILENO);
+                if (dup2(ofd, STDOUT_FILENO) == -1) _exit(1);
                 close(ofd);
-                execl("/usr/bin/sha256sum", "sha256sum", fpath, NULL);
+                execvp("sha256sum", (char *[]){ "sha256sum", fpath, NULL });
                 _exit(1);
             }
             waitpid(child, &st, 0);
             child = fork();
             if (child == 0) {
+                close_inherited_fds();
                 snprintf(out_path, sizeof(out_path), "build/dumps/%s.strings.txt", file_name);
-                int ofd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+                int ofd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0600);
                 if (ofd == -1) _exit(1);
-                dup2(ofd, STDOUT_FILENO);
+                if (dup2(ofd, STDOUT_FILENO) == -1) _exit(1);
                 close(ofd);
-                execl("/usr/bin/strings", "strings", "-n", "6", fpath, NULL);
+                execvp("strings", (char *[]){ "strings", "-n", "6", fpath, NULL });
                 _exit(1);
             }
             waitpid(child, &st, 0);
@@ -325,6 +338,9 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLeve
             found_count++;
         }
     }
+    if (found_count == 0) {
+        pathname[0] = '\0';
+    }
     fclose(f);
     if (found_count > 0) {
         char tag[32];
@@ -332,8 +348,8 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLeve
         snprintf(out_info, 128, "%02dx %s", found_count, tag);
     } else {
         *out_conf = CONFIDENCE_SAFE;
-        strcpy(out_info, "STABLE");
-        strcpy(out_addr, "n/a");
+        snprintf(out_info, 128, "%s", "STABLE");
+        snprintf(out_addr, 64, "%s", "n/a");
     }
     return found_count;
 }
@@ -608,11 +624,11 @@ int run_watch_loop(ExportFormat format, int silent_jit) {
                 if (strcmp(records[i].status, "RWX ALERT") != 0) continue;
                 char cl[12];
                 switch (records[i].confidence) {
-                    case 0: strcpy(cl, "SAFE"); break;
-                    case 1: strcpy(cl, "LOW"); break;
-                    case 2: strcpy(cl, "MEDIUM"); break;
-                    case 3: strcpy(cl, "CRITICAL"); break;
-                    default: strcpy(cl, "?"); break;
+                    case 0: snprintf(cl, sizeof(cl), "%s", "SAFE"); break;
+                    case 1: snprintf(cl, sizeof(cl), "%s", "LOW"); break;
+                    case 2: snprintf(cl, sizeof(cl), "%s", "MEDIUM"); break;
+                    case 3: snprintf(cl, sizeof(cl), "%s", "CRITICAL"); break;
+                    default: snprintf(cl, sizeof(cl), "%s", "?"); break;
                 }
                 printf("%-8d %-20.20s %-12s %-10s %s\n",
                        records[i].pid, records[i].process_name,

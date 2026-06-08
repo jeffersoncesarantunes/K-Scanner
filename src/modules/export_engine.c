@@ -13,6 +13,43 @@ static const char* conf_level_str(ConfidenceLevel c) {
     }
 }
 
+static void json_escape(FILE *f, const char *s) {
+    fputc('"', f);
+    while (*s) {
+        switch (*s) {
+            case '"':  fprintf(f, "\\\""); break;
+            case '\\': fprintf(f, "\\\\"); break;
+            case '\n': fprintf(f, "\\n");  break;
+            case '\r': fprintf(f, "\\r");  break;
+            case '\t': fprintf(f, "\\t");  break;
+            default:   fputc(*s, f);       break;
+        }
+        s++;
+    }
+    fputc('"', f);
+}
+
+static void csv_field(FILE *f, const char *s) {
+    int needs_quote = 0;
+    for (const char *p = s; *p; p++) {
+        if (*p == ',' || *p == '"' || *p == '\n' || *p == '\r') {
+            needs_quote = 1;
+            break;
+        }
+    }
+    if (needs_quote) {
+        fputc('"', f);
+        while (*s) {
+            if (*s == '"') fprintf(f, "\"\"");
+            else fputc(*s, f);
+            s++;
+        }
+        fputc('"', f);
+    } else {
+        fprintf(f, "%s", s);
+    }
+}
+
 void export_header(ExportFormat format) {
     if (format == EXPORT_JSON) {
         export_first_json = 1;
@@ -28,22 +65,38 @@ void export_record(const ForensicRecord *record, ExportFormat format) {
             if (!export_first_json) printf(",\n");
             printf("  {\n");
             printf("    \"pid\": %d,\n", record->pid);
-            printf("    \"process\": \"%s\",\n", record->process_name);
-            printf("    \"status\": \"%s\",\n", record->status);
+            printf("    \"process\": ");
+            json_escape(stdout, record->process_name);
+            printf(",\n");
+            printf("    \"status\": ");
+            json_escape(stdout, record->status);
+            printf(",\n");
             printf("    \"confidence\": \"%s\",\n", conf_level_str(record->confidence));
-            printf("    \"info\": \"%s\",\n", record->info_path);
-            printf("    \"addr\": \"%s\",\n", record->mem_addr);
-            printf("    \"container\": \"%s\"\n", record->container_id);
+            printf("    \"info\": ");
+            json_escape(stdout, record->info_path);
+            printf(",\n");
+            printf("    \"addr\": ");
+            json_escape(stdout, record->mem_addr);
+            printf(",\n");
+            printf("    \"container\": ");
+            json_escape(stdout, record->container_id);
+            printf("\n");
             printf("  }");
             export_first_json = 0;
             break;
 
         case EXPORT_CSV:
-            printf("%d,%s,%s,%s,%s,%s,%s\n", 
-                   record->pid, record->process_name, 
-                   record->status, conf_level_str(record->confidence),
-                   record->info_path, record->mem_addr,
-                   record->container_id);
+            printf("%d,", record->pid);
+            csv_field(stdout, record->process_name);
+            printf(",");
+            csv_field(stdout, record->status);
+            printf(",%s,", conf_level_str(record->confidence));
+            csv_field(stdout, record->info_path);
+            printf(",");
+            csv_field(stdout, record->mem_addr);
+            printf(",");
+            csv_field(stdout, record->container_id);
+            printf("\n");
             break;
 
         case EXPORT_TERMINAL:

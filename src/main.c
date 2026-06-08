@@ -47,9 +47,14 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--live") == 0) {
             if (i + 2 < argc) {
-                int pid = (int)strtol(argv[i+1], NULL, 10);
+                char *end;
+                long pid = strtol(argv[i+1], &end, 10);
+                if (*end != '\0' || pid <= 0) {
+                    fprintf(stderr, "Error: --live requires a valid PID > 0\n");
+                    return 1;
+                }
                 const char *pattern = argv[i+2];
-                run_live_regex_scan(pid, pattern);
+                run_live_regex_scan((int)pid, pattern);
                 return 0;
             } else {
                 fprintf(stderr, "Error: --live requires PID and PATTERN\n");
@@ -71,6 +76,10 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "--yara") == 0) {
             if (i + 1 < argc) {
                 yara_rule = argv[++i];
+                if (access(yara_rule, R_OK) != 0) {
+                    fprintf(stderr, "Error: --yara rule file not readable: %s\n", yara_rule);
+                    return 1;
+                }
             } else {
                 fprintf(stderr, "Error: --yara requires a rule file path\n");
                 return 1;
