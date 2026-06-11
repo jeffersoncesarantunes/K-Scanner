@@ -1,8 +1,3 @@
-# ==============================================================================
-# K-Scanner - Git Ignore Configuration
-# ==============================================================================
-
-# Build Artifacts
 build/
 bin/
 obj/
@@ -12,11 +7,9 @@ obj/
 *.so
 *.out
 
-# Generated Binaries
 kscanner
 bin/kscanner
 
-# Forensic Dumps & Evidence
 results/
 
 *.bin
@@ -24,7 +17,6 @@ results/
 *.dmp
 *.core
 
-# Automated Triage Artifacts
 *.sha256
 *.strings.txt
 *.hex.txt
@@ -34,20 +26,16 @@ results/
 *.json
 *.csv
 
-# Logs
 *.log
 
-# Editor Files
 .vscode/
 .idea/
 *.swp
 *~
 
-# Operating System Files
 .DS_Store
 Thumbs.db
 
-# Environment & Secrets
 .env
 .env.*
 *.pem
@@ -60,18 +48,15 @@ known_hosts
 .ssh/
 .gnupg/
 
-# Cloud Infrastructure
 .terraform/
 *.tfstate
 .kube/
 kubeconfig
 .aws/
 
-# Forensic Artifacts (root dir)
 forensic_report.txt
 genai
 os
 
-# NPM/Python configs
 .npmrc
 .pypirc

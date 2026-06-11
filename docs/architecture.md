@@ -1,10 +1,8 @@
-#  ● K-Scanner Architecture Reference
+# K-Scanner Architecture Reference
 
 ## 1. Overview
 
-K-Scanner is a high-performance live forensic tool that analyzes running
-processes via the `/proc` virtual filesystem.  It is non-intrusive — all
-inspection is read-only, no process is stopped or `ptrace`d.
+K-Scanner is a live forensic tool that inspects running processes through the `/proc` virtual filesystem. Everything is read-only — no processes get stopped, nothing gets `ptrace`d. The goal is to stay out of the way while still giving you meaningful visibility into memory permissions.
 
 ---
 
@@ -30,71 +28,59 @@ src/
 
 ### 2.1 Entry Point — `src/main.c`
 
-Parses CLI flags (`--json`, `--csv`, `--live`, `--bpf`, `--help`), selects
-TUI or headless mode, and invokes the scan orchestrator.
+Parses CLI flags (`--json`, `--csv`, `--live`, `--bpf`, `--help`), decides whether to run the TUI or headless mode, then hands off to the scan orchestrator.
 
 ### 2.2 Scan Orchestrator — `src/core/kscanner.c`
 
-- `run_scan_formatted()` — enumerates `/proc`, calls `check_mem_rwx()` per
-  PID, renders the TUI dashboard or writes structured output.
-- `run_scan_formatted_bpf()` — same loop but polls the eBPF perf ring
-  between TUI refreshes and displays live RWX events.
-- `dump_memory_region()` — triggered by ENTER in the TUI; reads the
-  suspicious memory region from `/proc/[PID]/mem`, writes a `.bin` dump,
-  and spawns `sha256sum`, `strings`, `hexdump` in `build/dumps/`.
+- `run_scan_formatted()` — walks through `/proc`, calls `check_mem_rwx()` on each PID, then renders the TUI dashboard or writes structured output.
+- `run_scan_formatted_bpf()` — same loop but also polls the eBPF perf ring between TUI refreshes, displaying live RWX events as they come in.
+- `dump_memory_region()` — triggered by ENTER in the TUI. Reads the suspicious memory region from `/proc/[PID]/mem`, writes a `.bin` dump, and spawns `sha256sum`, `strings`, and `hexdump` into `build/dumps/`.
 
 ### 2.3 Detection Engine — `src/core/mem_analyzer.c`
 
-- `forensic_has_rwx_memory()` — scans `/proc/[PID]/maps` for `rwxp`
-  permission entries.  Returns 1 if any RWX region is found.
-- `forensic_init()` — verifies `/proc` is accessible.
-- `forensic_cleanup()` — no persistent resources in the current design.
+- `forensic_has_rwx_memory()` — scans `/proc/[PID]/maps` for `rwxp` permission entries. Returns 1 if any RWX region is found.
+- `forensic_init()` — checks that `/proc` is accessible.
+- `forensic_cleanup()` — no persistent resources to clean up in the current design.
 
 ### 2.4 Process Hunter — `src/core/process_hunter.c`
 
-- `forensic_get_process_info()` — reads PID, name, exe path, RWX status,
-  container/sandbox flags into a `forensic_process_t` struct.
+- `forensic_get_process_info()` — reads PID, name, exe path, RWX status, and container/sandbox flags into a `forensic_process_t` struct.
 - `forensic_scan_all()` — counts all numeric entries under `/proc`.
 - `forensic_analyze_pid()` — checks whether `/proc/[PID]/maps` is readable.
 
 ### 2.5 TUI Engine — `src/modules/tui_engine.c`
 
-Raw ncurses rendering:
-- `init_tui()` / `stop_tui()` — lifecycle.
-- `update_dashboard()` — paints the process table with colour-coded rows
-  (red = `RWX ALERT`, green = `SAFE`), supports scrolling.
+Straightforward ncurses rendering:
+
+- `init_tui()` / `stop_tui()` — lifecycle management.
+- `update_dashboard()` — draws the process table with color-coded rows (red for `RWX ALERT`, green for `SAFE`), supports scrolling.
 - `handle_input()` — wraps `getch()`.
 
 ### 2.6 Export Engine — `src/modules/export_engine.c`
 
-Serializes `ForensicRecord[]` to three formats:
+Serializes `ForensicRecord[]` into three formats:
+
 - `EXPORT_TERMINAL` — aligned table for stdout.
 - `EXPORT_JSON` — array of objects with pid/process/status/info/addr.
-- `EXPORT_CSV` — header row + comma-separated values.
+- `EXPORT_CSV` — header row plus comma-separated values.
 
 ### 2.7 Regex Engine — `src/modules/regex_engine.c`
 
-- `start_live_regex_hunting()` — opens `/proc/[PID]/mem`, iterates over
-  readable memory regions from `/proc/[PID]/maps`, runs a POSIX extended
-  regex on each region, and calls `dispatch_regex_match()` for every hit.
+- `start_live_regex_hunting()` — opens `/proc/[PID]/mem`, iterates over readable memory regions from `/proc/[PID]/maps`, runs a POSIX extended regex on each region, and calls `dispatch_regex_match()` on every hit.
 - Invoked via `kscanner --live <PID> '<pattern>'`.
 
 ### 2.8 eBPF Telemetry — `src/modules/bpf_telemetry.c`
 
-- Hooks `raw_tp/sys_enter` to intercept `mmap(2)` / `mprotect(2)` calls
-  with `PROT_WRITE | PROT_EXEC`.
-- Pushes events through a `BPF_MAP_TYPE_PERF_EVENT_ARRAY` to userspace.
-- `bpf_telemetry_init()`, `bpf_telemetry_poll()`, `bpf_telemetry_shutdown()`
-  manage the libbpf lifecycle.
-- Events are drained into a fixed-size ring buffer and consumed by the
-  TUI loop or the headless code path.
+- Hooks `raw_tp/sys_enter` to catch `mmap(2)` / `mprotect(2)` calls with `PROT_WRITE | PROT_EXEC`.
+- Pushes events through a `BPF_MAP_TYPE_PERF_EVENT_ARRAY` up to userspace.
+- `bpf_telemetry_init()`, `bpf_telemetry_poll()`, `bpf_telemetry_shutdown()` handle the libbpf lifecycle.
+- Events drain into a fixed-size ring buffer that the TUI loop or headless code path can consume.
 
 ### 2.9 Advanced Features — `src/modules/advanced_features.c`
 
-- `is_containerized()` — inspects `/proc/[PID]/cgroup` for docker/lxc/kubepods.
-- `print_advanced_report()` — combines RWX + container info into a risk
-  level (LOW / MEDIUM / HIGH / CRITICAL).
-- `run_live_regex_scan()` — CLI entry point that wraps the regex engine.
+- `is_containerized()` — checks `/proc/[PID]/cgroup` for docker/lxc/kubepods.
+- `print_advanced_report()` — combines RWX status with container info and assigns a risk level (LOW / MEDIUM / HIGH / CRITICAL).
+- `run_live_regex_scan()` — CLI entry point wrapping the regex engine.
 
 ---
 
@@ -158,5 +144,4 @@ typedef struct {
 | eBPF telemetry      | libbpf, kernel BTF  | yes      |
 | Regex engine        | POSIX regex (glibc) | no       |
 
-`make bpf` compiles the BPF object; `make` links it in if libbpf is
-detected.  Run `make install` to deploy the binary + BPF object.
+`make bpf` compiles the BPF object; `make` links it in if libbpf is detected. Run `make install` to deploy both the binary and the BPF object.

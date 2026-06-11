@@ -1,41 +1,40 @@
-#  ●   Threat Model
+# Threat Model
 
-## 1.  Purpose
+## 1. Purpose
 
-This document defines the threat boundaries, detection scope, and operational assumptions of K-Scanner.
+This document lays out the threat boundaries, detection scope, and operational assumptions behind K-Scanner.
 
-K-Scanner is not a general-purpose malware detector.  
-It is a focused runtime forensic utility designed to identify violations of the W^X (Write XOR Execute) memory protection principle in live Linux systems.
+Let's be clear: K-Scanner is not a general-purpose malware detector. It's a focused runtime forensic utility that identifies violations of the W^X (Write XOR Execute) memory protection principle on live Linux systems.
 
-The objective of this document is clarity: what the tool detects, what it does not detect, and under which assumptions it operates.
+The point here is clarity — what this tool detects, what it doesn't, and what assumptions it makes.
 
 ---
 
 ## 2. Security Assumptions
 
-K-Scanner operates under the following assumptions:
+K-Scanner assumes the following:
 
-- The Linux kernel is trusted and uncompromised.
-- `/proc` metadata is reliable and has not been tampered with.
-- The operator has sufficient privileges to inspect process memory maps.
-- The attacker operates in user space (not kernel-level).
+- The Linux kernel is trusted and hasn't been compromised.
+- `/proc` metadata is reliable and hasn't been tampered with.
+- The operator has the privileges needed to inspect process memory maps.
+- The attacker operates in user space, not at the kernel level.
 
-If these assumptions are invalid, detection reliability cannot be guaranteed.
+If any of those assumptions don't hold, detection reliability goes out the window.
 
 ---
 
 ## 3. Detection Scope
 
-K-Scanner analyzes `/proc/[PID]/maps` and identifies memory regions that are simultaneously:
+K-Scanner reads `/proc/[PID]/maps` and flags memory regions that are simultaneously:
 
 - Writable (W)
 - Executable (X)
 
-Such regions violate the W^X principle and represent high-risk memory surfaces.
+Those regions violate the W^X principle and represent high-risk memory surfaces.
 
-## 3.1 Behaviors Covered
+### 3.1 Behaviors Covered
 
-K-Scanner is capable of detecting:
+K-Scanner can detect:
 
 - Explicit RWX mappings (`rwxp`)
 - Dynamically allocated executable-writable memory via `mmap`
@@ -46,20 +45,17 @@ K-Scanner is capable of detecting:
 
 ## 4. Attack Scenarios Covered
 
-## 4.1 Code Injection
+### 4.1 Code Injection
 
-Injected shellcode typically requires writable and executable memory.  
-If such memory is allocated or modified, K-Scanner will flag it.
+Injected shellcode usually needs writable and executable memory. If that combination shows up, K-Scanner will flag it.
 
-## 4.2 Self-Modifying Code
+### 4.2 Self-Modifying Code
 
-Malware that modifies its own instructions requires RWX memory regions.  
-These mappings are detectable.
+Malware that rewrites its own instructions needs RWX memory regions. Those mappings are detectable.
 
-## 4.3 JIT-Related Risk Surfaces
+### 4.3 JIT-Related Risk Surfaces
 
-JIT engines may legitimately allocate RWX pages.  
-Although not inherently malicious, these regions are high-value exploitation targets and are intentionally surfaced for analyst review.
+JIT engines legitimately allocate RWX pages. That's not inherently malicious, but those regions are prime exploitation targets, so they're surfaced intentionally for analyst review.
 
 ---
 
@@ -68,63 +64,59 @@ Although not inherently malicious, these regions are high-value exploitation tar
 K-Scanner does not detect:
 
 - Kernel-level rootkits
-- ROP-based attacks that do not require RWX memory
+- ROP-based attacks that never need RWX memory
 - File-based malware
-- Memory corruption without permission changes
-- Attacks that maintain W^X compliance
-- Tampering that hides `/proc` visibility
+- Memory corruption that doesn't change permissions
+- Attacks that stay W^X-compliant
+- Tampering that hides entries from `/proc`
 
-This limitation is intentional. The tool focuses strictly on memory permission anomalies.
+This is by design. The tool focuses narrowly on memory permission anomalies and nothing else.
 
 ---
 
 ## 6. False Positives
 
-Legitimate RWX memory usage may occur in:
+Legitimate RWX memory can show up in:
 
 - JIT runtimes
 - Research environments
 - Legacy systems
 
-K-Scanner flags RWX as a condition for review, not as definitive malware.
-
-Interpretation remains the responsibility of the analyst.
+K-Scanner flags RWX as a condition worth reviewing — not as definitive malware. Interpreting the results is still up to you.
 
 ---
 
 ## 7. Evasion Considerations
 
-Advanced attackers may attempt:
+Sophisticated attackers might try:
 
-- Temporary permission changes (write → execute → revert)
+- Temporary permission changes (write -> execute -> revert)
 - ROP-based execution
 - W^X-compliant injection
 - Kernel-level tampering
 
-K-Scanner does not implement anti-evasion techniques at this stage.
+K-Scanner doesn't implement anti-evasion techniques at this stage. That's future work.
 
 ---
 
 ## 8. Operational Positioning
 
-K-Scanner is best suited for:
+K-Scanner fits best in:
 
 - Live system triage
 - Incident response pre-analysis
 - Runtime integrity inspection
 - Hardening validation
 
-It is not intended to replace EDR systems or full memory forensic frameworks.
+It's not meant to replace EDR systems or full memory forensic frameworks. Use it where it fits, and pair it with other tools for the rest.
 
 ---
 
 ## 9. Summary
 
-K-Scanner solves a narrowly defined but meaningful problem:
+K-Scanner solves a narrow but real problem: identifying RWX memory regions in live Linux processes using non-intrusive metadata inspection.
 
-Identifying RWX memory regions in live Linux processes using non-intrusive metadata inspection.
-
-Its strength lies in:
+Its strengths are:
 
 - Simplicity
 - Transparency

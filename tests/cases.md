@@ -1,21 +1,16 @@
 # K-Scanner Test Cases
 
 ## Test 1: Basic Execution
-./kscanner
-Expected: TUI dashboard opens with process listing
+Run `./kscanner` and you should see the TUI dashboard pop up with a list of running processes.
 
 ## Test 2: Help output
-./kscanner --help
-Expected: Usage information displayed
+Run `./kscanner --help` — it should print usage information to stdout.
 
 ## Test 3: JSON export
-./kscanner --json
-Expected: Process data output as JSON array
+Run `./kscanner --json` and it should dump process data as a JSON array.
 
 ## Test 4: CSV export
-./kscanner --csv
-Expected: Process data output as CSV
+Run `./kscanner --csv` and it should output process data in CSV format.
 
 ## Test 5: Live regex scan
-sudo ./kscanner --live <pid> <pattern>
-Expected: Searches process memory for regex pattern
+Run `sudo ./kscanner --live <pid> <pattern>` and it should search the target process's memory for whatever regex pattern you give it.

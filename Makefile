@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Wpedantic -Iinclude -O2 -std=c99 -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector-strong
-LDFLAGS = -lncurses
+LDFLAGS = -lncurses -Wl,-z,relro,-z,now
 OBJ_DIR = build/obj
 BPF_DIR = build/bpf
 DUMP_DIR = build/dumps
@@ -13,7 +13,6 @@ BPF_OBJ = $(BPF_DIR)/rwx_monitor.bpf.o
 SRCS = $(shell find src -name "*.c" ! -path "src/bpf/*")
 OBJS = $(SRCS:src/%.c=$(OBJ_DIR)/%.o)
 
-# Detect libbpf availability for eBPF support
 HAVE_LIBBPF := $(shell pkg-config --exists libbpf 2>/dev/null && echo 1 || echo 0)
 
 ifeq ($(HAVE_LIBBPF),1)
@@ -27,13 +26,12 @@ $(TARGET): $(OBJS)
 	@mkdir -p $(DUMP_DIR) $(BPF_DIR)
 	@$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 	@strip $(TARGET)
-	@echo "🟢 Build successful!"
+	@echo "OK Build successful!"
 
 $(OBJ_DIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-# --- eBPF subsystem ---
 bpf: $(BPF_DIR) $(BPF_OBJ)
 
 $(BPF_DIR):
@@ -43,7 +41,6 @@ $(BPF_OBJ): src/bpf/rwx_monitor.bpf.c | $(BPF_DIR)
 	@echo "  BPF  $<"
 	@$(CLANG) $(BPF_CFLAGS) -c $< -o $@
 
-# --- Install ---
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
 SHAREDIR = $(PREFIX)/share/kscanner
@@ -62,7 +59,6 @@ uninstall:
 	@-rmdir $(SHAREDIR) 2>/dev/null; true
 	@echo "  Removed $(TARGET)"
 
-# --- Tests ---
 test: $(TARGET) bpf
 	@echo ""
 	@echo "--- Test 1: Help output ---"
@@ -81,21 +77,19 @@ test: $(TARGET) bpf
 	@test -f $(BPF_OBJ) && readelf -S $(BPF_OBJ) >/dev/null 2>&1 && echo "  PASS" || echo "  FAIL"
 	@echo ""
 
-# --- Debug build ---
 debug:
 	@$(MAKE) CFLAGS="-Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE -DDEBUG" clean $(TARGET)
 
-# --- Utilities ---
 triage:
 	@chmod +x scripts/forensic_triage.sh 2>/dev/null; true
 	@./scripts/forensic_triage.sh $(PID)
 
 clean-dumps:
 	@rm -f $(DUMP_DIR)/*.bin $(DUMP_DIR)/*.sha256 $(DUMP_DIR)/*.strings.txt $(DUMP_DIR)/*.hex.txt
-	@echo "🧹 Dumps cleaned."
+	@echo "Dumps cleaned."
 
 clean:
-	@echo "🧹 Clean."
+	@echo "Clean."
 	@rm -rf build/
 	@rm -f $(TARGET)
 

@@ -24,7 +24,7 @@ void print_table_footer(void) {
 
 void print_scan_summary(int total, int rwx, int safe) {
     print_table_footer();
-    printf("\n%s📊 Total: %d processes | 🔴 RWX: %d | 🟢 SAFE: %d%s\n", 
+    printf("\n%sStats: Total: %d processes | RWX: %d | SAFE: %d%s\n", 
            CLR_BOLD, total, rwx, safe, CLR_RESET);
     printf("[+] Scan completed successfully.\n");
 }

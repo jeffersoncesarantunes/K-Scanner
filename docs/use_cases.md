@@ -1,80 +1,80 @@
-#  ●  Use Cases
+# Use Cases
 
 ## 1. Incident Response (Live Triage)
 
-During active incident response, analysts often need rapid visibility into process integrity without dumping full memory images.
+When you're in the middle of incident response, you need quick visibility into process integrity without dumping full memory images. Every minute counts.
 
-K-Scanner enables:
+K-Scanner helps you:
 
-- Quick detection of suspicious RWX mappings
-- Identification of potentially injected processes
-- Fast anomaly triage before deeper forensic acquisition
+- Spot suspicious RWX mappings fast
+- Identify processes that look like they've been injected
+- Triage anomalies before committing to a deeper forensic acquisition
 
-It is especially useful when downtime must be minimized.
+This is especially useful when downtime needs to stay minimal.
 
 ---
 
 ## 2. Production Environment Monitoring
 
-In hardened Linux servers (e.g., web servers, API gateways, backend services), executable-writable memory is typically unnecessary.
+On hardened Linux servers — web servers, API gateways, backend services — executable-writable memory usually has no business existing.
 
-K-Scanner can be used to:
+You can use K-Scanner to:
 
-- Validate W^X compliance
-- Detect unsafe runtime behavior
+- Validate W^X compliance across the board
+- Catch unsafe runtime behavior before it becomes a problem
 - Audit memory permissions during security reviews
 
 ---
 
 ## 3. Security Research & Exploit Development Labs
 
-In controlled lab environments, K-Scanner can help:
+In a lab setting, K-Scanner is useful for:
 
-- Observe memory permission behavior during exploitation
-- Validate payload injection techniques
-- Study JIT allocation patterns
-- Understand runtime permission transitions
+- Watching how memory permissions behave during exploitation
+- Validating payload injection techniques
+- Studying JIT allocation patterns
+- Understanding how permissions transition at runtime
 
-It provides practical visibility into memory-level attack surfaces.
+It gives you hands-on visibility into the memory-level attack surface.
 
 ---
 
 ## 4. Red Team Validation
 
-During post-exploitation simulations, K-Scanner can be used defensively to:
+During post-exploitation simulations, you can use K-Scanner from a defensive angle to:
 
-- Evaluate detection visibility of injection techniques
-- Measure exposure of RWX-based payloads
-- Test stealth techniques against permission-based monitoring
+- Gauge how visible your injection techniques really are
+- Measure how exposed RWX-based payloads are to detection
+- Test whether stealth techniques can slip past permission-based monitoring
 
 ---
 
 ## 5. Hardening Verification
 
-After applying security hardening policies, K-Scanner can help confirm:
+After you've locked down a system, K-Scanner can confirm:
 
-- No unexpected RWX regions exist
-- Runtime services comply with memory protection best practices
-- Deployment configurations do not introduce unsafe flags
+- No unexpected RWX regions snuck through
+- Runtime services actually comply with memory protection best practices
+- Deployment configs aren't quietly introducing unsafe flags
 
 ---
 
 ## 6. Academic and Educational Use
 
-K-Scanner can serve as:
+K-Scanner works well as:
 
-- A teaching tool for understanding Linux memory mapping
-- A demonstration of W^X principles
-- A practical example of non-intrusive forensic tooling in C
+- A teaching tool for Linux memory mapping concepts
+- A practical demonstration of W^X in action
+- A straightforward example of non-intrusive forensic tooling written in C
 
 ---
 
 ## 7. Limitations in Real-World Use
 
-K-Scanner should not be used as:
+K-Scanner is not:
 
 - A full malware detection platform
-- A substitute for EDR solutions
+- A replacement for EDR solutions
 - A kernel integrity verifier
 
-It provides targeted visibility, not comprehensive threat coverage.
+It gives you targeted visibility into one specific thing — not comprehensive threat coverage.

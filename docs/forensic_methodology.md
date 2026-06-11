@@ -1,15 +1,19 @@
-#  ● Forensic Methodology
+# Forensic Methodology
 
-## ● RWX Detection Theory
-In modern computing, the **W^X (Write XOR Execute)** security policy ensures that memory pages are either writable or executable, but never both. K-Scanner is designed to detect violations of this principle.
+## RWX Detection Theory
 
-##  Indicators of Compromise (IoC)
-- **Self-Modifying Code**: Malicious payloads often modify their own code in memory to bypass static signatures.
-- **Code Injection**: Techniques like *Reflective DLL/SO Injection* typically create RWX regions to execute their payload.
-- **JIT Vulnerabilities**: While Just-In-Time engines (like those in browsers) use RWX, they are frequent targets for exploitation. K-Scanner monitors these high-risk areas.
+The **W^X (Write XOR Execute)** security policy says memory pages should be writable or executable, but never both at the same time. K-Scanner looks for violations of that principle — regions where a page has both `W` and `X` permissions simultaneously.
 
-##  Non-Intrusive Principles
-K-Scanner adheres to the **"Order of Volatility"** and evidence preservation standards:
-- **Passive Metadata Analysis**: The tool reads from `/proc/maps`, which provides metadata about the process without pausing it or attaching a debugger.
-- **Operational Safety**: By avoiding intrusive calls like `ptrace` or direct `pread` on hardware-mapped memory, K-Scanner eliminates the risk of system freezes or "Kernel Panics," making it safe for production environments.
-- **Evidence Integrity**: The tool performs read-only operations on system metadata to ensure the target environment remains as pristine as possible.
+## Indicators of Compromise (IoC)
+
+- **Self-Modifying Code:** Malicious payloads often rewrite their own code in memory to dodge static signatures. That requires RWX pages.
+- **Code Injection:** Reflective DLL/SO injection almost always creates RWX regions to run the payload.
+- **JIT Vulnerabilities:** Just-In-Time engines (browsers, runtimes) legitimately use RWX, but that makes them high-value targets for exploitation. K-Scanner flags those areas so you can review them.
+
+## Non-Intrusive Principles
+
+K-Scanner follows the **"Order of Volatility"** and standard evidence preservation practices:
+
+- **Passive Metadata Analysis:** It reads from `/proc/maps`, which gives you metadata about a process without stopping it or attaching anything.
+- **Operational Safety:** No intrusive calls like `ptrace` or direct `pread` on hardware-mapped memory. That eliminates the risk of freezing the system or triggering a kernel panic — safe for production use.
+- **Evidence Integrity:** Everything is read-only against system metadata, so the target environment stays as clean as possible.

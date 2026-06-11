@@ -1,4 +1,4 @@
-# 🐧 K-Scanner
+# K-Scanner
 
 Lightweight Linux memory auditing tool focused on RWX detection and automated forensic triage.
 
@@ -11,19 +11,19 @@ Lightweight Linux memory auditing tool focused on RWX detection and automated fo
 
 ---
 
-## ● Etymology & Origin
+## Etymology & Origin
 
-The name **K-Scanner** originates from the Linux **Kernel**, reflecting its role in inspecting runtime memory behavior and exposing anomalous execution patterns. The "K" pays homage to the Linux Kernel — the core operating system component that the tool relies on to scan process memory maps and detect RWX violations at the system level.
+The name **K-Scanner** comes from the Linux **Kernel** — it's all about inspecting runtime memory behavior and surfacing anomalous execution patterns. The "K" is a nod to the kernel, the core OS component this tool leans on to scan process memory maps and catch RWX violations at the system level.
 
 ---
 
-## ● Overview
+## Overview
 
-K-Scanner is a lightweight forensic utility designed to inspect active Linux processes for memory regions that violate the **W^X (Write XOR Execute)** security principle.
+K-Scanner is a lightweight forensic utility that inspects active Linux processes for memory regions violating the **W^X (Write XOR Execute)** security principle.
 
-Built in pure **C99**, it combines a high-performance scanning engine with an interactive **ncurses-based Brutalist TUI**, enabling real-time process navigation, RWX detection, and immediate forensic extraction.
+Written in pure **C99**, it pairs a high-performance scanning engine with an interactive **ncurses-based Brutalist TUI** so you can navigate processes, spot RWX regions, and extract forensic evidence in real time.
 
-Common RWX scenarios include:
+Common RWX scenarios you'll run into:
 
 * Shellcode injection
 * Reflective payload loading
@@ -32,7 +32,7 @@ Common RWX scenarios include:
 
 ---
 
-## ● Features
+## Features
 
 * Interactive ncurses-based TUI
 * Real-time RWX memory detection
@@ -57,9 +57,9 @@ Common RWX scenarios include:
 
 ---
 
-## ● Example Output
+## Example Output
 
-```text id="kex2m1"
+```text
  PID    PROCESS              STATUS       CONFIDENCE  MAP_ADDR
  1132   python3              RWX ALERT    LOW         7fc163862000
  1135   fail2ban-server      RWX ALERT    CRITICAL    7f59a964f000
@@ -70,11 +70,11 @@ Common RWX scenarios include:
 
 ---
 
-## ● How It Works
+## How It Works
 
-K-Scanner continuously parses `/proc/[PID]/maps` to identify memory regions and their permission flags.
+K-Scanner continuously reads `/proc/[PID]/maps` to find memory regions and inspect their permission flags.
 
-Audit flow:
+The audit flow looks like this:
 
 1. Parse `/proc/[PID]/maps`
 2. Identify memory permissions (R / W / X)
@@ -84,7 +84,7 @@ Audit flow:
 
 ### Understanding RWX Alerts
 
-Not every RWX region is malicious. Context matters.
+Not every RWX region is malicious — context matters.
 
 * **Expected JIT Behavior:** Browsers, Python, Node.js, and Electron apps may allocate RWX memory for JIT compilation
 * **Suspicious Activity:** Anonymous executable pages or RWX regions in non-JIT processes
@@ -92,9 +92,9 @@ Not every RWX region is malicious. Context matters.
 
 ---
 
-## ● Build and Run
+## Build and Run
 
-```bash id="p2k91a"
+```bash
 # Clone the repository
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
@@ -147,7 +147,7 @@ sudo make uninstall
 
 ### YARA Rule Scanning
 
-[YARA](https://virustotal.github.io/yara/) is a pattern-matching engine for identifying malware samples. When passed via `--yara`, K-Scanner scans forensic memory dumps against your YARA rules for known threat patterns.
+[YARA](https://virustotal.github.io/yara/) is a pattern-matching engine for identifying malware samples. When you pass `--yara`, K-Scanner runs your YARA rules against forensic memory dumps to look for known threat patterns.
 
 ```bash
 # Install YARA (optional, required for --yara)
@@ -156,13 +156,13 @@ sudo pacman -S yara
 
 ---
 
-## ● Investigation & Post-Analysis Workflow
+## Investigation & Post-Analysis Workflow
 
-After detecting an RWX region, analysts can immediately acquire and validate volatile evidence.
+Once you've spotted an RWX region, you can grab and verify volatile evidence right away.
 
 ### 1. Live Memory Acquisition
 
-Select a suspicious process and press `ENTER`.
+Find the suspicious process and hit `ENTER`.
 
 K-Scanner will automatically:
 
@@ -173,26 +173,26 @@ K-Scanner will automatically:
 
 ### 2. Integrity Verification
 
-```bash id="x91akl"
+```bash
 cd build/dumps
 sha256sum -c *.sha256
 ```
 
 ### 3. Rapid Triage
 
-```bash id="9as21x"
+```bash
 grep -iE "http|ssh|cmd|bash|token|pass" *.strings.txt
 ```
 
 ### 4. Binary Inspection
 
-```bash id="zx12qw"
+```bash
 head -n 20 *.hex.txt
 ```
 
 ### 5. Full Artifact Set
 
-Each memory extraction generates:
+Each memory extraction produces:
 
 * Raw binary dump (`.bin`)
 * SHA256 checksum (`.sha256`)
@@ -204,11 +204,11 @@ Each memory extraction generates:
 
 ---
 
-## ● Why
+## Why
 
-Detecting executable writable memory in Linux is still a fragmented and manual process.
+Detecting executable writable memory on Linux is still a fragmented, mostly manual process.
 
-K-Scanner centralizes this capability by providing:
+K-Scanner pulls all that together by giving you:
 
 * Deterministic RWX detection
 * Interactive live process inspection
@@ -216,26 +216,26 @@ K-Scanner centralizes this capability by providing:
 * Immediate triage-ready artifacts
 * Minimal operational overhead
 
-It transforms raw `/proc` telemetry into incident-response-ready intelligence.
+It turns raw `/proc` telemetry into something you can actually act on during incident response.
 
 ---
 
-## ● Project in Action
+## Project in Action
 
 ![Live Scan](./Images/kscanner1.png)
-*1 - Live forensic mode identifying RWX memory regions in real-time.*
+*Live forensic mode identifying RWX memory regions in real-time.*
 
 ![RWX Detection](./Images/kscanner2.png)
-*2 - Memory triage with automatic extraction of relevant strings.*
+*Memory triage with automatic extraction of relevant strings.*
 
 ![Forensic Extraction](./Images/kscanner3.png)
-*3 - Evidence preservation with SHA-256 integrity validation.*
+*Evidence preservation with SHA-256 integrity validation.*
 
 ---
 
-## ● Operational Integrity
+## Operational Integrity
 
-K-Scanner is designed for safe live-response environments:
+K-Scanner was built for safe live-response work:
 
 * Passive / read-only analysis
 * No process injection
@@ -244,7 +244,7 @@ K-Scanner is designed for safe live-response environments:
 
 ---
 
-## ● Deployment
+## Deployment
 
 ### Requirements
 
@@ -267,42 +267,43 @@ K-Scanner is designed for safe live-response environments:
 
 ---
 
-## ● Repository Structure
+## Repository Structure
+
 ```text
-├── bin/
-│   └── kscanner
-├── build/
-│   ├── dumps/
-│   └── obj/
-├── docs/
-│   ├── architecture.md
-│   ├── forensic_methodology.md
-│   ├── performance_and_limitations.md
-│   ├── threat_model.md
-│   └── use_cases.md
-├── examples/
-│   └── usage.md
-├── Images/
-│   ├── kscanner1.png
-│   ├── kscanner2.png
-│   └── kscanner3.png
-├── include/
-├── scripts/
-├── src/
-│   ├── bpf/
-│   ├── core/
-│   ├── modules/
-│   └── utils/
-├── tests/
-│   └── cases.md
-├── LICENSE
-├── Makefile
-└── README.md
+bin/
+    kscanner
+build/
+    dumps/
+    obj/
+docs/
+    architecture.md
+    forensic_methodology.md
+    performance_and_limitations.md
+    threat_model.md
+    use_cases.md
+examples/
+    usage.md
+Images/
+    kscanner1.png
+    kscanner2.png
+    kscanner3.png
+include/
+scripts/
+src/
+    bpf/
+    core/
+    modules/
+    utils/
+tests/
+    cases.md
+LICENSE
+Makefile
+README.md
 ```
 
 ---
 
-## ● Tech Stack
+## Tech Stack
 
 * **Language:** C99
 * **Interface:** ncurses
@@ -314,7 +315,7 @@ K-Scanner is designed for safe live-response environments:
 
 ---
 
-## ● Roadmap
+## Roadmap
 
 * [x] Modular C Engine
 * [x] Interactive ncurses TUI
@@ -336,7 +337,7 @@ K-Scanner is designed for safe live-response environments:
 
 ---
 
-## ● Documentation
+## Documentation
 
 [![Docs-Architecture](https://img.shields.io/badge/Architecture-Design-00599C?style=flat-square\&logo=linux\&logoColor=white)](./docs/architecture.md)
 [![Docs-Methodology](https://img.shields.io/badge/Forensic-Methodology-444444?style=flat-square\&logo=gnu-bash\&logoColor=white)](./docs/forensic_methodology.md)
@@ -346,7 +347,7 @@ K-Scanner is designed for safe live-response environments:
 
 ---
 
-## ● License
+## License
 
 [![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square\&logo=opensourceinitiative\&logoColor=white)](./LICENSE)
 

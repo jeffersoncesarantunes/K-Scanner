@@ -7,6 +7,8 @@
 sudo ./kscanner
 ```
 
+That's the simplest way to get started — it drops you into the ncurses dashboard where you can see all running processes and their RWX status.
+
 ## Export Modes
 
 ```bash
@@ -17,9 +19,11 @@ sudo ./kscanner --json
 sudo ./kscanner --csv
 ```
 
+Handy if you want to pipe output into other tools or log scans for later review.
+
 ## Live Regex Memory Hunting
 
-Search for sensitive patterns in a specific process's memory space:
+You can search for specific patterns inside a process's memory space:
 
 ```bash
 # Search for password-like strings in PID 1234
@@ -31,7 +35,7 @@ sudo ./kscanner --live 5678 'https?://[a-zA-Z0-9./]+'
 
 ## eBPF Real-time Monitoring
 
-Monitor the entire system for processes allocating RWX memory:
+Watch the whole system for processes allocating RWX memory:
 
 ```bash
 # Enable eBPF telemetry alongside the TUI
@@ -41,15 +45,14 @@ sudo ./kscanner --bpf
 sudo ./kscanner --json --bpf
 ```
 
-eBPF events appear in the TUI status bar as they occur, showing PID,
-process name, and the address of each RWX allocation.
+eBPF events show up in the TUI status bar as they happen — you'll see the PID, process name, and the address of each RWX allocation.
 
 ## Forensic Memory Dump
 
-Within the TUI:
+Inside the TUI:
 1. Navigate to a process with a red `RWX ALERT` row
 2. Press `ENTER` to dump the suspicious memory region
-3. Artifacts are saved to `build/dumps/`:
+3. Artifacts land in `build/dumps/`:
    - `pid_<PID>_<ADDR>.bin` — raw memory dump
    - `.sha256` — integrity hash
    - `.strings.txt` — extracted printable strings

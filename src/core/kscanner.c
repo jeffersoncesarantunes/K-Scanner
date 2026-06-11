@@ -242,9 +242,12 @@ static void dump_memory_region(int pid, char *addr_str) {
     char mem_path[256], out_path[256], line[512];
     char file_name[128], fpath[512];
     unsigned long start, end;
+    snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
+    int fd = open(mem_path, O_RDONLY);
+    if (fd == -1) return;
     snprintf(mem_path, sizeof(mem_path), "/proc/%d/maps", pid);
     FILE *f = fopen(mem_path, "r");
-    if (!f) return;
+    if (!f) { close(fd); return; }
     int found = 0;
     while (fgets(line, sizeof(line), f)) {
         if (strstr(line, "rwxp") && strstr(line, addr_str)) {
@@ -255,18 +258,12 @@ static void dump_memory_region(int pid, char *addr_str) {
         }
     }
     fclose(f);
-    if (!found) return;
-    if (end <= start) return;
+    if (!found) { close(fd); return; }
+    if (end <= start) { close(fd); return; }
     size_t size = end - start;
-    if (size > 256 * 1024 * 1024) return;
+    if (size > 256 * 1024 * 1024) { close(fd); return; }
     void *buffer = malloc(size);
-    if (!buffer) return;
-    snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
-    int fd = open(mem_path, O_RDONLY);
-    if (fd == -1) {
-        free(buffer);
-        return;
-    }
+    if (!buffer) { close(fd); return; }
     if (pread(fd, buffer, size, (off_t)start) == (ssize_t)size) {
         mkdir("build", 0750);
         mkdir("build/dumps", 0750);
@@ -274,7 +271,7 @@ static void dump_memory_region(int pid, char *addr_str) {
         snprintf(out_path, sizeof(out_path), "build/dumps/%s", file_name);
         int out_fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
         if (out_fd != -1) {
-            if (write(out_fd, buffer, size) == -1) { close(out_fd); free(buffer); close(fd); return; }
+            if (write(out_fd, buffer, size) == -1) { close(out_fd); close(fd); free(buffer); return; }
             close(out_fd);
             snprintf(fpath, sizeof(fpath), "build/dumps/%s", file_name);
             int child, st;
@@ -322,9 +319,13 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLeve
     char path[256], line[512], addr[64], perms[8], pathname[256];
     int found_count = 0;
     char raw_origin[256] = "";
+    int mem_fd;
+    snprintf(path, sizeof(path), "/proc/%d/mem", pid);
+    mem_fd = open(path, O_RDONLY);
+    if (mem_fd == -1) return 0;
     snprintf(path, sizeof(path), "/proc/%d/maps", pid);
     FILE *f = fopen(path, "r");
-    if (!f) return 0;
+    if (!f) { close(mem_fd); return 0; }
     while (fgets(line, sizeof(line), f)) {
         if (strstr(line, "rwxp")) {
             pathname[0] = '\0';
@@ -342,6 +343,7 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLeve
         pathname[0] = '\0';
     }
     fclose(f);
+    close(mem_fd);
     if (found_count > 0) {
         char tag[32];
         *out_conf = map_context_tag(raw_origin, tag, sizeof(tag));
@@ -424,7 +426,7 @@ int run_scan_formatted(ExportFormat format, int silent_jit) {
                 case 'Q':
                     running = 0;
                     break;
-                case 10: 
+                case 10:
                     if (strcmp(records[selected].mem_addr, "n/a") != 0) {
                         attron(COLOR_PAIR(2) | A_BOLD | A_REVERSE);
                         mvprintw(LINES - 1, 0, " [!] ACTION: PERFORMING DEEP MEMORY SCAN ON PID %d... ", records[selected].pid);
@@ -648,5 +650,3 @@ int run_watch_loop(ExportFormat format, int silent_jit) {
     }
     return 0;
 }
-
-
