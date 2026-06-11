@@ -39,7 +39,7 @@ void update_dashboard(const ForensicRecord *records, int count, int selected_idx
 
     attron(COLOR_PAIR(3) | A_BOLD);
     mvprintw(0, 1, "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
-    mvprintw(1, 1, "┃ 🐧  K-Scanner | Live Forensic Process Analysis Mode                    ┃");
+    mvprintw(1, 1, "┃ [K] K-Scanner | Live Forensic Process Analysis Mode                     ┃");
     mvprintw(2, 1, "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
     attroff(COLOR_PAIR(3) | A_BOLD);
 

@@ -31,7 +31,7 @@ static int handle_bpf_flag(BpfTelemetryState *bpf_state) {
         fprintf(stderr, "    or the kernel does not support BPF / you lack CAP_BPF.\n");
         return -1;
     }
-    fprintf(stderr, "%s[+] eBPF telemetry active — monitoring RWX allocations in real time%s\n",
+    fprintf(stderr, "%s[+] eBPF telemetry active -- monitoring RWX allocations in real time%s\n",
             CLR_GREEN, CLR_RESET);
     return 0;
 }
@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
                     case 30: sname = "shmat"; break;
                     case 59: sname = "execve"; break;
                 }
-                printf("%s[BPF] %s — PID %d (%s) @ %s%s\n",
+                printf("%s[BPF] %s -- PID %d (%s) @ %s%s\n",
                        CLR_RED, sname, bpf_ev.pid, bpf_ev.comm, bpf_ev.addr, CLR_RESET);
             }
         }
