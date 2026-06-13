@@ -22,8 +22,7 @@ src/
 │   ├── bpf_telemetry.c        eBPF real-time RWX monitor (libbpf)
 │   └── advanced_features.c    Container detection, risk scoring
 └── utils/
-    ├── logger.c               Table-formatted terminal output
-    └── memory_utils.c         /proc/[PID]/maps RWX test
+    └── logger.c               Table-formatted terminal output
 ```
 
 ### 2.1 Entry Point — `src/main.c`

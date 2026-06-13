@@ -22,6 +22,6 @@ case $opt in
     3)
         echo "Running final verification..."
         make clean && make
-        ./bin/kscanner --help
+        ./kscanner --help
         ;;
 esac
