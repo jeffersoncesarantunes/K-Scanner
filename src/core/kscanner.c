@@ -385,17 +385,17 @@ int run_scan_formatted(ExportFormat format, int silent_jit) {
     while ((entry = readdir(dir)) != NULL && count < 1024) {
         if (!isdigit(entry->d_name[0])) continue;
         int pid = (int)strtol(entry->d_name, NULL, 10);
-        records[count].pid = pid;
-        get_process_name(pid, temp_name);
+        records[count].pid = (int)pid;
+        get_process_name((int)pid, temp_name);
         snprintf(records[count].process_name, 256, "%s", temp_name);
         char rwx_details[128], rwx_addr[64];
         ConfidenceLevel conf;
-        int violations = check_mem_rwx(pid, rwx_details, rwx_addr, &conf);
+        int violations = check_mem_rwx((int)pid, rwx_details, rwx_addr, &conf);
         records[count].confidence = conf;
         snprintf(records[count].status, 64, "%s", (violations > 0) ? "RWX ALERT" : "SAFE");
         snprintf(records[count].info_path, 512, "%s", rwx_details);
         snprintf(records[count].mem_addr, 64, "%s", rwx_addr);
-        get_container_id(pid, records[count].container_id, sizeof(records[count].container_id));
+        get_container_id((int)pid, records[count].container_id, sizeof(records[count].container_id));
         if (violations > 0 && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
         count++;
     }
@@ -601,12 +601,12 @@ int run_watch_loop(ExportFormat format, int silent_jit) {
         struct dirent *entry;
         while ((entry = readdir(dir)) && count < max_proc) {
             if (!isdigit(entry->d_name[0])) continue;
-            int pid = (int)strtol(entry->d_name, NULL, 10);
+            pid_t pid = (pid_t)strtol(entry->d_name, NULL, 10);
             char pname[256], rwx_info[128], rwx_addr[64];
             ConfidenceLevel conf;
-            get_process_name(pid, pname);
-            int v = check_mem_rwx(pid, rwx_info, rwx_addr, &conf);
-            records[count].pid = pid;
+            get_process_name((int)pid, pname);
+            int v = check_mem_rwx((int)pid, rwx_info, rwx_addr, &conf);
+            records[count].pid = (int)pid;
             records[count].confidence = conf;
             snprintf(records[count].process_name, 256, "%s", pname);
             snprintf(records[count].status, 64, "%s", v ? "RWX ALERT" : "SAFE");
