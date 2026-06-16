@@ -242,6 +242,14 @@ static ConfidenceLevel map_context_tag(const char* path, char *out_tag, size_t t
     return CONFIDENCE_CRITICAL;
 }
 
+/*
+ * NOTE: TOCTOU in /proc analysis
+ * Between opening /proc/PID/mem and /proc/PID/maps, the target PID
+ * could be recycled by the kernel. This is an inherent limitation of
+ * live forensic analysis. The tool mitigates this by using
+ * O_CLOEXEC and keeping file descriptors open for the minimum
+ * necessary duration.
+ */
 static void dump_memory_region(int pid, char *addr_str) {
     char mem_path[256], out_path[256], line[512];
     char file_name[128], fpath[512];
