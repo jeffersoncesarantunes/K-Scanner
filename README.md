@@ -270,35 +270,35 @@ K-Scanner was built for safe live-response work:
 ## Repository Structure
 
 ```text
-bin/
-    kscanner
-build/
-    dumps/
-    obj/
-docs/
-    architecture.md
-    forensic_methodology.md
-    performance_and_limitations.md
-    threat_model.md
-    use_cases.md
-examples/
-    usage.md
-Images/
-    kscanner1.png
-    kscanner2.png
-    kscanner3.png
-include/
-scripts/
-src/
-    bpf/
-    core/
-    modules/
-    utils/
-tests/
-    cases.md
-LICENSE
-Makefile
-README.md
+├── bin/
+│   └── kscanner               Main scanner executable
+├── build/
+│   ├── dumps/                 Memory dump output
+│   └── obj/                   Object files
+├── docs/
+│   ├── architecture.md        System architecture and design
+│   ├── forensic_methodology.md  Forensic analysis methodology
+│   ├── performance_and_limitations.md  Performance characteristics
+│   ├── threat_model.md        Security threat model
+│   └── use_cases.md           Usage scenarios
+├── examples/
+│   └── usage.md               Example commands and workflows
+├── Images/
+│   ├── kscanner1.png          Main interface
+│   ├── kscanner2.png          Scan results
+│   └── kscanner3.png          Module output
+├── include/                   Public headers
+├── scripts/                   Build and utility scripts
+├── src/
+│   ├── bpf/                   BPF programs
+│   ├── core/                  Core scanning engine
+│   ├── modules/               Plugin modules
+│   └── utils/                 Utility functions
+├── tests/
+│   └── cases.md               Test scenarios
+├── LICENSE
+├── Makefile
+└── README.md
 ```
 
 ---
