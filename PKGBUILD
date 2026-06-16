@@ -10,6 +10,8 @@ depends=('ncurses' 'binutils')
 makedepends=('gcc' 'make' 'clang' 'pkg-config')
 optdepends=('libbpf: eBPF real-time RWX telemetry (--bpf flag)')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/jeffersoncesarantunes/K-Scanner/archive/v$pkgver.tar.gz")
+# FIXME: Replace SKIP with the actual sha256sum of the source tarball
+# Generate with: curl -sL https://github.com/jeffersoncesarantunes/K-Scanner/archive/v$pkgver.tar.gz | sha256sum
 sha256sums=('SKIP')
 
 build() {
