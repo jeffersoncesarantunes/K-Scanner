@@ -72,7 +72,7 @@ static void close_inherited_fds(void) {
 
 static void scan_with_yara(const char *dump_path, const char *rule_path, const char *out_path) {
     if (access(rule_path, R_OK) != 0) {
-        log_warn("YARA rule file no longer readable: %s\n", rule_path);
+        fprintf(stderr, "[!] YARA rule file no longer readable: %s\n", rule_path);
         return;
     }
     pid_t child = fork();
