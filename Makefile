@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Wpedantic -Iinclude -O2 -std=c99 -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE
-LDFLAGS = -lncurses -pie -Wl,-z,relro,-z,now
+LDFLAGS = -lncurses -pie -Wl,-z,relro,-z,now -Wl,-z,noexecstack
 OBJ_DIR = build/obj
 BPF_DIR = build/bpf
 DUMP_DIR = build/dumps
