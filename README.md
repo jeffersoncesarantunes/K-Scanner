@@ -2,6 +2,7 @@
 
 Lightweight Linux memory auditing tool focused on RWX detection and automated forensic triage.
 
+
 [![Platform-Linux](https://img.shields.io/badge/Platform-Linux-1793D1?style=flat-square&logo=linux&logoColor=white)](https://kernel.org)
 [![Language-C99](https://img.shields.io/badge/Language-C99-A8B9CC?style=flat-square&logo=c&logoColor=white)](https://gcc.gnu.org/)
 [![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square&logo=license&logoColor=white)](LICENSE)
@@ -9,11 +10,13 @@ Lightweight Linux memory auditing tool focused on RWX detection and automated fo
 [![Tested-on](https://img.shields.io/badge/Tested%20on-Arch%20Linux-1793D1?style=flat-square&logo=arch-linux)](https://security.archlinux.org/)
 [![Domain](https://img.shields.io/badge/Domain-Live%20Memory%20Forensics-8A2BE2?style=flat-square)](./docs/forensic_methodology.md)
 
+
 ---
 
 ## Etymology & Origin
 
 The name **K-Scanner** comes from the Linux **Kernel** — it's all about inspecting runtime memory behavior and surfacing anomalous execution patterns. The "K" is a nod to the kernel, the core OS component this tool leans on to scan process memory maps and catch RWX violations at the system level.
+
 
 ---
 
@@ -25,14 +28,17 @@ Written in pure **C99**, it pairs a high-performance scanning engine with an int
 
 Common RWX scenarios you'll run into:
 
+
 * Shellcode injection
 * Reflective payload loading
 * Fileless malware execution
 * JIT-compiled engines (Firefox, Python, Node.js, Discord)
 
+
 ---
 
 ## Features
+
 
 * Interactive ncurses-based TUI
 * Real-time RWX memory detection
@@ -55,6 +61,7 @@ Common RWX scenarios you'll run into:
 * eBPF real-time RWX telemetry (`--bpf`, requires root + libbpf)
 * **eBPF full syscall coverage** — `mmap`, `mprotect`, `shmat` (`SHM_EXEC`), `execve`
 
+
 ---
 
 ## Example Output
@@ -68,6 +75,7 @@ Common RWX scenarios you'll run into:
  [ENTER] ANALYZE | [Q] EXIT | ALERTS: 12 | BPF: OFF
 ```
 
+
 ---
 
 ## How It Works
@@ -76,19 +84,23 @@ K-Scanner continuously reads `/proc/[PID]/maps` to find memory regions and inspe
 
 The audit flow looks like this:
 
+
 1. Parse `/proc/[PID]/maps`
 2. Identify memory permissions (R / W / X)
 3. Detect RWX violations (W^X policy breach)
 4. Classify process behavior
 5. Trigger forensic extraction pipeline
 
+
 ### Understanding RWX Alerts
 
 Not every RWX region is malicious — context matters.
 
+
 * **Expected JIT Behavior:** Browsers, Python, Node.js, and Electron apps may allocate RWX memory for JIT compilation
 * **Suspicious Activity:** Anonymous executable pages or RWX regions in non-JIT processes
 * **Forensic Priority:** Unexpected mappings should be dumped and analyzed first
+
 
 ---
 
@@ -154,11 +166,13 @@ sudo make uninstall
 sudo pacman -S yara
 ```
 
+
 ---
 
 ## Investigation & Post-Analysis Workflow
 
 Once you've spotted an RWX region, you can grab and verify volatile evidence right away.
+
 
 ### 1. Live Memory Acquisition
 
@@ -166,10 +180,12 @@ Find the suspicious process and hit `ENTER`.
 
 K-Scanner will automatically:
 
+
 * Dump the RWX region
 * Generate SHA256 checksum
 * Extract printable strings
 * Produce a hexadecimal preview
+
 
 ### 2. Integrity Verification
 
@@ -194,6 +210,7 @@ head -n 20 *.hex.txt
 
 Each memory extraction produces:
 
+
 * Raw binary dump (`.bin`)
 * SHA256 checksum (`.sha256`)
 * Extracted strings (`.strings.txt`)
@@ -201,6 +218,7 @@ Each memory extraction produces:
 * x86-64 disassembly listing (`.disasm.txt`)
 * Shellcode pattern analysis (`.shellcode.txt`)
 * YARA rule matches (`.yara.txt`, when `--yara` is active)
+
 
 ---
 
@@ -210,6 +228,7 @@ Detecting executable writable memory on Linux is still a fragmented, mostly manu
 
 K-Scanner pulls all that together by giving you:
 
+
 * Deterministic RWX detection
 * Interactive live process inspection
 * Automated forensic evidence collection
@@ -218,18 +237,23 @@ K-Scanner pulls all that together by giving you:
 
 It turns raw `/proc` telemetry into something you can actually act on during incident response.
 
+
 ---
 
 ## Project in Action
 
 ![Live Scan](./Images/kscanner1.png)
+
 *Live forensic mode identifying RWX memory regions in real-time.*
 
 ![RWX Detection](./Images/kscanner2.png)
+
 *Memory triage with automatic extraction of relevant strings.*
 
 ![Forensic Extraction](./Images/kscanner3.png)
+
 *Evidence preservation with SHA-256 integrity validation.*
+
 
 ---
 
@@ -237,16 +261,19 @@ It turns raw `/proc` telemetry into something you can actually act on during inc
 
 K-Scanner was built for safe live-response work:
 
+
 * Passive / read-only analysis
 * No process injection
 * Controlled memory dumping
 * Automatic evidence integrity validation
+
 
 ---
 
 ## Deployment
 
 ### Requirements
+
 
 * Linux Kernel 5.x or newer
 * gcc
@@ -260,10 +287,12 @@ K-Scanner was built for safe live-response work:
 
 ### Optional (eBPF telemetry)
 
+
 * libbpf (runtime + build-time)
 * Clang (build-time, for BPF compilation)
 * Kernel BTF (`/sys/kernel/btf/vmlinux`)
 * `CONFIG_BPF`, `CONFIG_BPF_SYSCALL`, `CONFIG_DEBUG_INFO_BTF` enabled
+
 
 ---
 
@@ -271,39 +300,52 @@ K-Scanner was built for safe live-response work:
 
 ```text
 ├── bin/
-│   └── kscanner               Main scanner executable
+│   └── kscanner                           Main scanner executable
+
 ├── build/
-│   ├── dumps/                 Memory dump output
-│   └── obj/                   Object files
+│   ├── dumps/                             Memory dump output
+│   └── obj/                               Object files
+
 ├── docs/
-│   ├── architecture.md        System architecture and design
-│   ├── forensic_methodology.md  Forensic analysis methodology
-│   ├── performance_and_limitations.md  Performance characteristics
-│   ├── threat_model.md        Security threat model
-│   └── use_cases.md           Usage scenarios
+│   ├── architecture.md                    System architecture and design
+│   ├── forensic_methodology.md            Forensic analysis methodology
+│   ├── performance_and_limitations.md     Performance characteristics
+│   ├── threat_model.md                    Security threat model
+│   └── use_cases.md                       Usage scenarios
+
 ├── examples/
-│   └── usage.md               Example commands and workflows
+│   └── usage.md                           Example commands and workflows
+
 ├── Images/
-│   ├── kscanner1.png          Main interface
-│   ├── kscanner2.png          Scan results
-│   └── kscanner3.png          Module output
-├── include/                   Public headers
-├── scripts/                   Build and utility scripts
+│   ├── kscanner1.png                      Main interface
+│   ├── kscanner2.png                      Scan results
+│   └── kscanner3.png                      Module output
+
+├── include/                               Public headers
+
+├── scripts/                               Build and utility scripts
+
 ├── src/
-│   ├── bpf/                   BPF programs
-│   ├── core/                  Core scanning engine
-│   ├── modules/               Plugin modules
-│   └── utils/                 Utility functions
+│   ├── bpf/                               BPF programs
+│   ├── core/                              Core scanning engine
+│   ├── modules/                           Plugin modules
+│   └── utils/                             Utility functions
+
 ├── tests/
-│   └── cases.md               Test scenarios
+│   └── cases.md                           Test scenarios
+
 ├── LICENSE
+
 ├── Makefile
+
 └── README.md
 ```
+
 
 ---
 
 ## Tech Stack
+
 
 * **Language:** C99
 * **Interface:** ncurses
@@ -313,9 +355,11 @@ K-Scanner was built for safe live-response work:
 * **Build Tool:** GNU Make + Clang (for BPF)
 * **Target:** Linux Kernel 5.x / 6.x
 
+
 ---
 
 ## Roadmap
+
 
 * [x] Modular C Engine
 * [x] Interactive ncurses TUI
@@ -335,6 +379,7 @@ K-Scanner was built for safe live-response work:
 * [ ] Multi-process coordinated attack scenarios
 * [ ] Remote API / gRPC endpoint for SIEM integration
 
+
 ---
 
 ## Documentation
@@ -344,6 +389,7 @@ K-Scanner was built for safe live-response work:
 [![Docs-ThreatModel](https://img.shields.io/badge/Threat-Model-CC0000?style=flat-square\&logo=opensourceinitiative\&logoColor=white)](./docs/threat_model.md)
 [![Docs-Performance](https://img.shields.io/badge/Performance-Limits-8A2BE2?style=flat-square)](./docs/performance_and_limitations.md)
 [![Docs-UseCases](https://img.shields.io/badge/Use-Cases-228B22?style=flat-square)](./docs/use_cases.md)
+
 
 ---
 
