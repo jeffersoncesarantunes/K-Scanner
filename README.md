@@ -299,53 +299,53 @@ K-Scanner was built for safe live-response work:
 ## Repository Structure
 
 ```text
-+-- bin/
-|   \-- kscanner                           Main scanner executable
+├── bin/
+│   └── kscanner
 
-+-- build/
-|   +-- bpf/                               BPF compiled objects
-|   +-- dumps/                             Memory dump output
-|   \-- obj/                               Object files
+├── build/
+│   ├── bpf/
+│   ├── dumps/
+│   └── obj/
 
-+-- docs/
-|   +-- architecture.md                    System architecture and design
-|   +-- forensic_methodology.md            Forensic analysis methodology
-|   +-- performance_and_limitations.md     Performance characteristics
-|   +-- threat_model.md                    Security threat model
-|   \-- use_cases.md                       Usage scenarios
+├── docs/
+│   ├── architecture.md
+│   ├── forensic_methodology.md
+│   ├── performance_and_limitations.md
+│   ├── threat_model.md
+│   └── use_cases.md
 
-+-- examples/
-|   \-- usage.md                           Example commands and workflows
+├── examples/
+│   └── usage.md
 
-+-- Images/
-|   +-- kscanner1.png                      Main interface screenshot
-|   +-- kscanner2.png                      Scan results screenshot
-|   \-- kscanner3.png                      Module output screenshot
+├── Images/
+│   ├── kscanner1.png
+│   ├── kscanner2.png
+│   └── kscanner3.png
 
-+-- include/                               Public header files
+├── include/
 
-+-- scripts/
-|   +-- build.sh                           Build helper script
-|   +-- diagnostic.sh                      Diagnostic utility script
-|   +-- run_tests.sh                       Test execution script
-|   \-- setup_dev_env.sh                   Development environment setup
+├── scripts/
+│   ├── build.sh
+│   ├── diagnostic.sh
+│   ├── run_tests.sh
+│   └── setup_dev_env.sh
 
-+-- src/
-|   +-- bpf/                               BPF programs
-|   +-- core/                              Core scanning engine
-|   +-- modules/                           Plugin modules
-|   \-- utils/                             Utility functions
+├── src/
+│   ├── bpf/
+│   ├── core/
+│   ├── modules/
+│   └── utils/
 
-+-- tests/
-|   \-- cases.md                           Test scenarios
+├── tests/
+│   └── cases.md
 
-+-- PKGBUILD                               Arch Linux package definition
+├── PKGBUILD
 
-+-- LICENSE
+├── LICENSE
 
-+-- Makefile
+├── Makefile
 
-\-- README.md
+└── README.md
 ```
 
 
