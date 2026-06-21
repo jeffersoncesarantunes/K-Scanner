@@ -303,6 +303,7 @@ K-Scanner was built for safe live-response work:
 │   └── kscanner                           Main scanner executable
 
 ├── build/
+│   ├── bpf/                               BPF compiled objects
 │   ├── dumps/                             Memory dump output
 │   └── obj/                               Object files
 
@@ -317,13 +318,17 @@ K-Scanner was built for safe live-response work:
 │   └── usage.md                           Example commands and workflows
 
 ├── Images/
-│   ├── kscanner1.png                      Main interface
-│   ├── kscanner2.png                      Scan results
-│   └── kscanner3.png                      Module output
+│   ├── kscanner1.png                      Main interface screenshot
+│   ├── kscanner2.png                      Scan results screenshot
+│   └── kscanner3.png                      Module output screenshot
 
-├── include/                               Public headers
+├── include/                               Public header files
 
-├── scripts/                               Build and utility scripts
+├── scripts/
+│   ├── build.sh                           Build helper script
+│   ├── diagnostic.sh                      Diagnostic utility script
+│   ├── run_tests.sh                       Test execution script
+│   └── setup_dev_env.sh                   Development environment setup
 
 ├── src/
 │   ├── bpf/                               BPF programs
@@ -333,6 +338,8 @@ K-Scanner was built for safe live-response work:
 
 ├── tests/
 │   └── cases.md                           Test scenarios
+
+├── PKGBUILD                               Arch Linux package definition
 
 ├── LICENSE
 
