@@ -43,9 +43,10 @@ $(BPF_OBJ): src/bpf/rwx_monitor.bpf.c | $(BPF_DIR)
 
 PREFIX ?= /usr/local
 BINDIR  = $(PREFIX)/bin
+MANDIR  = $(PREFIX)/share/man/man1
 SHAREDIR = $(PREFIX)/share/kscanner
 
-install: $(TARGET) bpf
+install: $(TARGET) bpf install-man
 	@mkdir -p $(BINDIR) $(SHAREDIR)
 	@install -m 755 $(TARGET) $(BINDIR)/$(TARGET)
 	@install -m 644 $(BPF_OBJ) $(SHAREDIR)/rwx_monitor.bpf.o
@@ -53,10 +54,17 @@ install: $(TARGET) bpf
 	@echo "  Installed $(TARGET) to $(BINDIR)"
 	@echo "  Installed BPF object to $(SHAREDIR)"
 
+install-man:
+	@mkdir -p $(MANDIR)
+	@install -m 644 man/kscanner.1 $(MANDIR)/kscanner.1
+	@echo "  Installed man page to $(MANDIR)"
+
 uninstall:
 	@rm -f $(BINDIR)/$(TARGET)
 	@rm -f $(SHAREDIR)/rwx_monitor.bpf.o
 	@-rmdir $(SHAREDIR) 2>/dev/null; true
+	@rm -f $(MANDIR)/kscanner.1
+	@-rmdir $(MANDIR) 2>/dev/null; true
 	@echo "  Removed $(TARGET)"
 
 test: $(TARGET) bpf

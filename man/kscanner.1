@@ -1,0 +1,69 @@
+.TH KSCANNER 1 "2026-06-27" "K-Scanner" "User Commands"
+.SH NAME
+kscanner \- Linux memory auditing tool for RWX detection and forensic triage
+.SH SYNOPSIS
+.B kscanner
+[\fI--json\fR | \fI--csv\fR]
+[\fI--live\fR \fIpid\fR \fIpattern\fR]
+[\fI--bpf\fR]
+[\fI--watch\fR]
+[\fI--silent-jit\fR]
+[\fI--yara\fR \fIrule.yara\fR]
+[\fI--help\fR]
+.SH DESCRIPTION
+K-Scanner scans running processes on a Linux system for RWX
+(read-write-execute) memory regions, a strong indicator of memory
+corruption, injected shellcode, or live process manipulation.
+It reads /proc/PID/maps to enumerate mapped regions and applies
+multiple heuristics to filter out false positives (JIT engines,
+system libraries, vDSO, etc.).
+.SH OPTIONS
+.TP
+.B \--json
+Export results in JSON format (disables TUI).
+.TP
+.B \--csv
+Export results in CSV format (disables TUI).
+.TP
+.B \--live \fIpid\fR \fIpattern\fR
+Search for a regex pattern in the memory of a live process.
+.IP
+Example: \fBkscanner --live 1234 "password|secret"\fR
+.TP
+.B \--bpf
+Enable eBPF real-time RWX telemetry (requires root and
+kernel BPF support).
+.TP
+.B \--watch
+Continuous headless monitoring mode (2-second scan cycles).
+.TP
+.B \--silent-jit
+Suppress JIT engine RWX regions from alert count (reduces
+false positives).
+.TP
+.B \--yara \fIrule.yara\fR
+Scan forensic memory dumps with YARA rules. The \fByara\fR
+binary must be installed and available in PATH.
+.TP
+.B \--help
+Display this help message and exit.
+.SH FILES
+.TP
+.I /proc/[PID]/maps
+Source of memory mapping information.
+.TP
+.I /proc/[PID]/mem
+Source for memory region dumping.
+.SH EXIT STATUS
+.B 0
+on success, 1 on error or invalid arguments.
+.SH BUGS
+TOCTOU race conditions in /proc analysis are an inherent
+limitation of live forensic analysis. See SECURITY.md.
+.SH AUTHOR
+Jefferson Cesar Antunes
+.SH SEE ALSO
+.BR kverify (1),
+.BR linspec (1),
+.BR syscage (1),
+.BR siren (1)
