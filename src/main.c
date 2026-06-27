@@ -9,6 +9,32 @@
 #include "../include/tui_engine.h"
 #include "../include/bpf_telemetry.h"
 
+static int resolve_binary_path(const char *name, char **out) {
+    const char *path_env = getenv("PATH");
+    if (!path_env) return -1;
+
+    char *path_copy = strdup(path_env);
+    if (!path_copy) return -1;
+
+    char *dir;
+    char full[4096];
+    int found = -1;
+
+    dir = strtok(path_copy, ":");
+    while (dir) {
+        snprintf(full, sizeof(full), "%s/%s", dir, name);
+        if (access(full, X_OK) == 0) {
+            *out = strdup(full);
+            found = 0;
+            break;
+        }
+        dir = strtok(NULL, ":");
+    }
+
+    free(path_copy);
+    return found;
+}
+
 static void print_main_usage(void) {
     printf("Usage: kscanner [OPTIONS]\n");
     printf("Options:\n");
@@ -80,6 +106,13 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Error: --yara rule file not readable: %s\n", yara_rule);
                     return 1;
                 }
+                char *yara_bin = NULL;
+                if (resolve_binary_path("yara", &yara_bin) != 0) {
+                    fprintf(stderr, "Error: 'yara' binary not found in PATH\n");
+                    return 1;
+                }
+                set_yara_binary_path(yara_bin);
+                free(yara_bin);
             } else {
                 fprintf(stderr, "Error: --yara requires a rule file path\n");
                 return 1;
