@@ -401,10 +401,3 @@ K-Scanner was built for safe live-response work:
 [![Docs-UseCases](https://img.shields.io/badge/Use-Cases-228B22?style=flat-square)](./docs/use_cases.md)
 
 
----
-
-## License
-
-[![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square\&logo=opensourceinitiative\&logoColor=white)](./LICENSE)
-
-*This project is licensed under the MIT License.*
