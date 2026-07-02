@@ -304,49 +304,37 @@ K-Scanner was built for safe live-response work:
 ```text
 ├── bin/
 │   └── kscanner
-
 ├── build/
 │   ├── bpf/
 │   ├── dumps/
 │   └── obj/
-
 ├── docs/
 │   ├── architecture.md
 │   ├── forensic_methodology.md
 │   ├── performance_and_limitations.md
 │   ├── threat_model.md
 │   └── use_cases.md
-
 ├── examples/
 │   └── usage.md
-
 ├── Images/
 │   ├── kscanner1.png
 │   ├── kscanner2.png
 │   └── kscanner3.png
-
 ├── include/
-
 ├── scripts/
 │   ├── build.sh
 │   ├── diagnostic.sh
 │   ├── run_tests.sh
 │   └── setup_dev_env.sh
-
 ├── src/
 │   ├── bpf/
 │   ├── core/
 │   └── modules/
-
 ├── tests/
 │   └── cases.md
-
 ├── PKGBUILD
-
 ├── LICENSE
-
 ├── Makefile
-
 └── README.md
 ```
 
