@@ -336,8 +336,7 @@ K-Scanner was built for safe live-response work:
 ├── src/
 │   ├── bpf/
 │   ├── core/
-│   ├── modules/
-│   └── utils/
+│   └── modules/
 
 ├── tests/
 │   └── cases.md
