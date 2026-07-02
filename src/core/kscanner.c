@@ -11,6 +11,7 @@
 #include <time.h>
 #include <ncurses.h>
 #include "kscanner.h"
+#include "colors.h"
 #include "export_engine.h"
 #include "tui_engine.h"
 #include "bpf_telemetry.h"
@@ -77,8 +78,8 @@ static void close_inherited_fds(void) {
 }
 
 static void scan_with_yara(const char *dump_path, const char *rule_path, const char *out_path) {
-    if (access(rule_path, R_OK) != 0) {
-        fprintf(stderr, "[!] YARA rule file no longer readable: %s\n", rule_path);
+    if (access(rule_path, R_OK) != 0 || access(g_yara_binary, X_OK) != 0) {
+        fprintf(stderr, "[!] YARA rule or binary not accessible: %s\n", rule_path);
         return;
     }
     pid_t child = fork();
@@ -252,12 +253,9 @@ static void dump_memory_region(int pid, char *addr_str) {
     char mem_path[256], out_path[256], line[512];
     char file_name[128], fpath[512];
     unsigned long start, end;
-    snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
-    int fd = open(mem_path, O_RDONLY);
-    if (fd == -1) return;
     snprintf(mem_path, sizeof(mem_path), "/proc/%d/maps", pid);
     FILE *f = fopen(mem_path, "r");
-    if (!f) { close(fd); return; }
+    if (!f) return;
     int found = 0;
     while (fgets(line, sizeof(line), f)) {
         if (strstr(line, "rwxp") && strstr(line, addr_str)) {
@@ -268,12 +266,15 @@ static void dump_memory_region(int pid, char *addr_str) {
         }
     }
     fclose(f);
-    if (!found) { close(fd); return; }
-    if (end <= start) { close(fd); return; }
+    if (!found) return;
+    if (end <= start) return;
     size_t size = end - start;
-    if (size > 256 * 1024 * 1024) { close(fd); return; }
+    if (size > 256 * 1024 * 1024) return;
     void *buffer = malloc(size);
-    if (!buffer) { close(fd); return; }
+    if (!buffer) return;
+    snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
+    int fd = open(mem_path, O_RDONLY);
+    if (fd == -1) { free(buffer); return; }
     if (pread(fd, buffer, size, (off_t)start) == (ssize_t)size) {
         mkdir("build", 0750);
         mkdir("build/dumps", 0750);
@@ -329,13 +330,9 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLeve
     char path[256], line[512], addr[64], perms[8], pathname[256];
     int found_count = 0;
     char raw_origin[256] = "";
-    int mem_fd;
-    snprintf(path, sizeof(path), "/proc/%d/mem", pid);
-    mem_fd = open(path, O_RDONLY);
-    if (mem_fd == -1) return 0;
     snprintf(path, sizeof(path), "/proc/%d/maps", pid);
     FILE *f = fopen(path, "r");
-    if (!f) { close(mem_fd); return 0; }
+    if (!f) return 0;
     while (fgets(line, sizeof(line), f)) {
         if (strstr(line, "rwxp")) {
             pathname[0] = '\0';
@@ -353,7 +350,6 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLeve
         pathname[0] = '\0';
     }
     fclose(f);
-    close(mem_fd);
     if (found_count > 0) {
         char tag[32];
         *out_conf = map_context_tag(raw_origin, tag, sizeof(tag));
@@ -380,28 +376,41 @@ static void get_process_name(int pid, char *out_name) {
     }
 }
 
-int run_scan_formatted(ExportFormat format, int silent_jit) {
-    DIR *dir;
+static void print_bpf_event(BpfRwxEvent *ev) {
+    const char *sname = "?";
+    switch (ev->syscall_nr) {
+        case 9:  sname = "mmap"; break;
+        case 10: sname = "mprotect"; break;
+        case 30: sname = "shmat"; break;
+        case 59: sname = "execve"; break;
+    }
+    printf("%s[BPF] %s -- PID %d (%s) @ %s%s\n",
+           CLR_RED, sname, ev->pid, ev->comm, ev->addr, CLR_RESET);
+}
+
+static void bpf_drain_and_print(BpfTelemetryState *bpf) {
+    BpfRwxEvent bpf_ev;
+    while (bpf_telemetry_drain_ring(bpf, &bpf_ev, 1) > 0) {
+        print_bpf_event(&bpf_ev);
+    }
+}
+
+static int scan_processes(ForensicRecord *records, int max_records, int silent_jit, int *out_rwx_total) {
+    DIR *dir = opendir("/proc");
+    if (!dir) return -1;
     struct dirent *entry;
-    char temp_name[256];
-    ForensicRecord *records = malloc(sizeof(ForensicRecord) * 1024);
     int count = 0;
     int rwx_total = 0;
-    dir = opendir("/proc");
-    if (!dir) {
-        free(records);
-        return 1;
-    }
-    while ((entry = readdir(dir)) != NULL && count < 1024) {
+    while ((entry = readdir(dir)) != NULL && count < max_records) {
         if (!isdigit(entry->d_name[0])) continue;
-        int pid = (int)strtol(entry->d_name, NULL, 10);
-        records[count].pid = (int)pid;
-        get_process_name((int)pid, temp_name);
-        snprintf(records[count].process_name, 256, "%s", temp_name);
-        char rwx_details[128], rwx_addr[64];
+        pid_t pid = (pid_t)strtol(entry->d_name, NULL, 10);
+        char temp_name[256], rwx_details[128], rwx_addr[64];
         ConfidenceLevel conf;
+        get_process_name((int)pid, temp_name);
         int violations = check_mem_rwx((int)pid, rwx_details, rwx_addr, &conf);
+        records[count].pid = (int)pid;
         records[count].confidence = conf;
+        snprintf(records[count].process_name, 256, "%s", temp_name);
         snprintf(records[count].status, 64, "%s", (violations > 0) ? "RWX ALERT" : "SAFE");
         snprintf(records[count].info_path, 512, "%s", rwx_details);
         snprintf(records[count].mem_addr, 64, "%s", rwx_addr);
@@ -410,20 +419,58 @@ int run_scan_formatted(ExportFormat format, int silent_jit) {
         count++;
     }
     closedir(dir);
+    if (out_rwx_total) *out_rwx_total = rwx_total;
+    return count;
+}
+
+int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_jit) {
+    ForensicRecord *records = malloc(sizeof(ForensicRecord) * 1024);
+    if (!records) return 1;
+    int rwx_total = 0;
+    int count = scan_processes(records, 1024, silent_jit, &rwx_total);
+
     if (format == EXPORT_TERMINAL) {
         int selected = 0;
         int running = 1;
         while (running) {
+            if (bpf && bpf->active) {
+                bpf_telemetry_poll(bpf);
+            }
             update_dashboard(records, count, selected);
+
+            if (bpf && bpf->active && bpf->ring_head != bpf->ring_tail) {
+                BpfRwxEvent bpf_ev;
+                if (bpf_telemetry_drain_ring(bpf, &bpf_ev, 1) > 0) {
+                    const char *sname = "?";
+                    switch (bpf_ev.syscall_nr) {
+                        case 9:  sname = "mmap"; break;
+                        case 10: sname = "mprotect"; break;
+                        case 30: sname = "shmat"; break;
+                        case 59: sname = "execve"; break;
+                    }
+                    attron(COLOR_PAIR(2) | A_BOLD);
+                    if (bpf_ev.syscall_nr == 59)
+                        mvprintw(LINES - 2, 2, " [BPF] EXEC PID %d (%-8s)                    ",
+                                 bpf_ev.pid, bpf_ev.comm);
+                    else
+                        mvprintw(LINES - 2, 2, " [BPF] %s PID %d (%-8s) @ %s       ",
+                                 sname, bpf_ev.pid, bpf_ev.comm, bpf_ev.addr);
+                    attroff(COLOR_PAIR(2) | A_BOLD);
+                }
+            }
+
             attron(COLOR_PAIR(3) | A_BOLD);
             char cnt_info[32] = "";
             if (records[selected].container_id[0])
                 snprintf(cnt_info, sizeof(cnt_info), " | CTN:%.12s", records[selected].container_id);
-            mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | TARGET: %-15.15s (PID: %-6d)%s", 
-                     rwx_total, records[selected].process_name, records[selected].pid, cnt_info);
+            mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | BPF: %s | TARGET: %-15.15s (PID: %-6d)%s",
+                     rwx_total,
+                     (bpf && bpf->active) ? "ON " : "OFF",
+                     records[selected].process_name, records[selected].pid, cnt_info);
             for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
             attroff(COLOR_PAIR(3) | A_BOLD);
             refresh();
+
             int ch = handle_input();
             switch (ch) {
                 case KEY_UP:
@@ -468,121 +515,9 @@ int run_scan_formatted(ExportFormat format, int silent_jit) {
             export_record(&records[i], format);
         }
         export_footer(format);
-    }
-    free(records);
-    return 0;
-}
-
-int run_scan_formatted_bpf(ExportFormat format, BpfTelemetryState *bpf, int silent_jit)
-{
-    (void)format;
-    DIR *dir;
-    struct dirent *entry;
-    char temp_name[256];
-    ForensicRecord *records = malloc(sizeof(ForensicRecord) * 1024);
-    int count = 0;
-    int rwx_total = 0;
-    dir = opendir("/proc");
-    if (!dir) {
-        free(records);
-        return 1;
-    }
-    while ((entry = readdir(dir)) != NULL && count < 1024) {
-        if (!isdigit(entry->d_name[0])) continue;
-        int pid = (int)strtol(entry->d_name, NULL, 10);
-        records[count].pid = pid;
-        get_process_name(pid, temp_name);
-        snprintf(records[count].process_name, 256, "%s", temp_name);
-        char rwx_details[128], rwx_addr[64];
-        ConfidenceLevel conf;
-        int violations = check_mem_rwx(pid, rwx_details, rwx_addr, &conf);
-        records[count].confidence = conf;
-        snprintf(records[count].status, 64, "%s", (violations > 0) ? "RWX ALERT" : "SAFE");
-        snprintf(records[count].info_path, 512, "%s", rwx_details);
-        snprintf(records[count].mem_addr, 64, "%s", rwx_addr);
-        get_container_id(pid, records[count].container_id, sizeof(records[count].container_id));
-        if (violations > 0 && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
-        count++;
-    }
-    closedir(dir);
-
-    int selected = 0;
-    int running = 1;
-    while (running) {
         if (bpf && bpf->active) {
             bpf_telemetry_poll(bpf);
-        }
-        update_dashboard(records, count, selected);
-
-        if (bpf && bpf->active && bpf->ring_head != bpf->ring_tail) {
-            BpfRwxEvent bpf_ev;
-            if (bpf_telemetry_drain_ring(bpf, &bpf_ev, 1) > 0) {
-                const char *sname = "?";
-                switch (bpf_ev.syscall_nr) {
-                    case 9:  sname = "mmap"; break;
-                    case 10: sname = "mprotect"; break;
-                    case 30: sname = "shmat"; break;
-                    case 59: sname = "execve"; break;
-                }
-                attron(COLOR_PAIR(2) | A_BOLD);
-                if (bpf_ev.syscall_nr == 59)
-                    mvprintw(LINES - 2, 2, " [BPF] EXEC PID %d (%-8s)                    ",
-                             bpf_ev.pid, bpf_ev.comm);
-                else
-                    mvprintw(LINES - 2, 2, " [BPF] %s PID %d (%-8s) @ %s       ",
-                             sname, bpf_ev.pid, bpf_ev.comm, bpf_ev.addr);
-                attroff(COLOR_PAIR(2) | A_BOLD);
-            }
-        }
-
-        attron(COLOR_PAIR(3) | A_BOLD);
-        char cnt_info[32] = "";
-        if (records[selected].container_id[0])
-            snprintf(cnt_info, sizeof(cnt_info), " | CTN:%.12s", records[selected].container_id);
-        mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | BPF: %s | TARGET: %-15.15s (PID: %-6d)%s",
-                 rwx_total,
-                 (bpf && bpf->active) ? "ON " : "OFF",
-                 records[selected].process_name, records[selected].pid, cnt_info);
-        for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
-        attroff(COLOR_PAIR(3) | A_BOLD);
-        refresh();
-
-        int ch = handle_input();
-        switch (ch) {
-            case KEY_UP:
-                if (selected > 0) selected--;
-                break;
-            case KEY_DOWN:
-                if (selected < count - 1) selected++;
-                break;
-            case 'q':
-            case 'Q':
-                running = 0;
-                break;
-            case 10:
-                if (strcmp(records[selected].mem_addr, "n/a") != 0) {
-                    attron(COLOR_PAIR(2) | A_BOLD | A_REVERSE);
-                    mvprintw(LINES - 1, 0, " [!] ACTION: PERFORMING DEEP MEMORY SCAN ON PID %d... ", records[selected].pid);
-                    for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
-                    refresh();
-                    dump_memory_region(records[selected].pid, records[selected].mem_addr);
-                    attrset(A_NORMAL);
-                    attron(COLOR_PAIR(1) | A_BOLD | A_REVERSE);
-                    mvprintw(LINES - 1, 0, " [V] FORENSIC REPORT GENERATED SUCCESSFULLY IN: build/dumps/ ");
-                    for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
-                    refresh();
-                    sleep(2);
-                    attrset(A_NORMAL);
-                } else {
-                    attron(COLOR_PAIR(5) | A_BOLD | A_REVERSE);
-                    mvprintw(LINES - 1, 0, " [X] SECURITY BYPASS: PROCESS IS STABLE - NO VOLATILE RWX REGIONS DETECTED ");
-                    for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
-                    refresh();
-                    beep();
-                    sleep(2);
-                    attrset(A_NORMAL);
-                }
-                break;
+            bpf_drain_and_print(bpf);
         }
     }
 
@@ -604,29 +539,8 @@ int run_watch_loop(ExportFormat format, int silent_jit) {
 
         ForensicRecord *records = malloc(sizeof(ForensicRecord) * max_proc);
         if (!records) break;
-        int count = 0, rwx_total = 0;
-
-        DIR *dir = opendir("/proc");
-        if (!dir) { free(records); break; }
-        struct dirent *entry;
-        while ((entry = readdir(dir)) && count < max_proc) {
-            if (!isdigit(entry->d_name[0])) continue;
-            pid_t pid = (pid_t)strtol(entry->d_name, NULL, 10);
-            char pname[256], rwx_info[128], rwx_addr[64];
-            ConfidenceLevel conf;
-            get_process_name((int)pid, pname);
-            int v = check_mem_rwx((int)pid, rwx_info, rwx_addr, &conf);
-            records[count].pid = (int)pid;
-            records[count].confidence = conf;
-            snprintf(records[count].process_name, 256, "%s", pname);
-            snprintf(records[count].status, 64, "%s", v ? "RWX ALERT" : "SAFE");
-            snprintf(records[count].info_path, 512, "%s", rwx_info);
-            snprintf(records[count].mem_addr, 64, "%s", rwx_addr);
-            get_container_id(pid, records[count].container_id, sizeof(records[count].container_id));
-            if (v && !(silent_jit && conf == CONFIDENCE_LOW)) rwx_total++;
-            count++;
-        }
-        closedir(dir);
+        int rwx_total = 0;
+        int count = scan_processes(records, max_proc, silent_jit, &rwx_total);
 
         if (format == EXPORT_TERMINAL) {
             printf("\n=== CYCLE %d @ %s ===\n", cycle, ts);

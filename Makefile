@@ -7,7 +7,7 @@ DUMP_DIR = build/dumps
 TARGET = kscanner
 
 CLANG ?= clang
-BPF_CFLAGS = -target bpf -g -O2
+BPF_CFLAGS = -target bpf -g -O2 -I/usr/include/$(shell uname -m)-linux-gnu
 BPF_OBJ = $(BPF_DIR)/rwx_monitor.bpf.o
 
 SRCS = $(shell find src -name "*.c" ! -path "src/bpf/*")
@@ -92,7 +92,6 @@ debug:
 	@$(MAKE) CFLAGS="-Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE -DDEBUG" clean $(TARGET)
 
 triage:
-	@chmod +x scripts/forensic_triage.sh 2>/dev/null; true
 	@./scripts/forensic_triage.sh $(PID)
 
 clean-dumps:

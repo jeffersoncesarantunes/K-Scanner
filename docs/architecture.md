@@ -12,17 +12,12 @@ K-Scanner is a live forensic tool that inspects running processes through the `/
 src/
 ├── main.c                     Entry point, CLI dispatch
 ├── core/
-│   ├── kscanner.c             Scan orchestrator, TUI loop, memory dump
-│   ├── mem_analyzer.c         RWX region detection + lifecycle API
-│   └── process_hunter.c       Process enumeration + metadata lookup
+│   └── kscanner.c             Scan orchestrator, TUI loop, memory dump
 ├── modules/
 │   ├── tui_engine.c           ncurses dashboard rendering
 │   ├── export_engine.c        JSON / CSV / terminal structured output
 │   ├── regex_engine.c         In-memory regex search (/proc/[PID]/mem)
-│   ├── bpf_telemetry.c        eBPF real-time RWX monitor (libbpf)
-│   └── advanced_features.c    Container detection, risk scoring
-└── utils/
-    └── logger.c               Table-formatted terminal output
+│   └── bpf_telemetry.c        eBPF real-time RWX monitor (libbpf)
 ```
 
 ### 2.1 Entry Point — `src/main.c`
@@ -31,21 +26,10 @@ Parses CLI flags (`--json`, `--csv`, `--live`, `--bpf`, `--help`), decides wheth
 
 ### 2.2 Scan Orchestrator — `src/core/kscanner.c`
 
-- `run_scan_formatted()` — walks through `/proc`, calls `check_mem_rwx()` on each PID, then renders the TUI dashboard or writes structured output.
-- `run_scan_formatted_bpf()` — same loop but also polls the eBPF perf ring between TUI refreshes, displaying live RWX events as they come in.
+- `run_scan_formatted()` — walks `/proc`, calls `check_mem_rwx()` on each PID, renders the TUI dashboard or writes structured output. Supports optional eBPF polling for live RWX events.
 - `dump_memory_region()` — triggered by ENTER in the TUI. Reads the suspicious memory region from `/proc/[PID]/mem`, writes a `.bin` dump, and spawns `sha256sum`, `strings`, and `hexdump` into `build/dumps/`.
-
-### 2.3 Detection Engine — `src/core/mem_analyzer.c`
-
-- `forensic_has_rwx_memory()` — scans `/proc/[PID]/maps` for `rwxp` permission entries. Returns 1 if any RWX region is found.
-- `forensic_init()` — checks that `/proc` is accessible.
-- `forensic_cleanup()` — no persistent resources to clean up in the current design.
-
-### 2.4 Process Hunter — `src/core/process_hunter.c`
-
-- `forensic_get_process_info()` — reads PID, name, exe path, RWX status, and container/sandbox flags into a `forensic_process_t` struct.
-- `forensic_scan_all()` — counts all numeric entries under `/proc`.
-- `forensic_analyze_pid()` — checks whether `/proc/[PID]/maps` is readable.
+- Container ID detection via cgroup parsing.
+- Shellcode pattern analysis and YARA integration.
 
 ### 2.5 TUI Engine — `src/modules/tui_engine.c`
 
@@ -74,12 +58,6 @@ Serializes `ForensicRecord[]` into three formats:
 - Pushes events through a `BPF_MAP_TYPE_PERF_EVENT_ARRAY` up to userspace.
 - `bpf_telemetry_init()`, `bpf_telemetry_poll()`, `bpf_telemetry_shutdown()` handle the libbpf lifecycle.
 - Events drain into a fixed-size ring buffer that the TUI loop or headless code path can consume.
-
-### 2.9 Advanced Features — `src/modules/advanced_features.c`
-
-- `is_containerized()` — checks `/proc/[PID]/cgroup` for docker/lxc/kubepods.
-- `print_advanced_report()` — combines RWX status with container info and assigns a risk level (LOW / MEDIUM / HIGH / CRITICAL).
-- `run_live_regex_scan()` — CLI entry point wrapping the regex engine.
 
 ---
 
@@ -119,19 +97,12 @@ CLI arguments
 typedef struct {
     int pid;
     char process_name[256];
-    char status[64];       // "RWX ALERT" | "SAFE"
-    char info_path[512];   // region count + context tag
-    char mem_addr[64];     // first RWX address
+    char status[64];
+    char info_path[512];
+    char mem_addr[64];
+    char container_id[48];
+    ConfidenceLevel confidence;
 } ForensicRecord;
-
-typedef struct {
-    pid_t pid;
-    char  name[256];
-    char  exe_path[4096];
-    uint64_t memory_rwx;
-    int is_sandboxed;
-    int is_container;
-} forensic_process_t;
 ```
 
 ## 5. Build & Dependencies

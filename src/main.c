@@ -25,6 +25,7 @@ static int resolve_binary_path(const char *name, char **out) {
         snprintf(full, sizeof(full), "%s/%s", dir, name);
         if (access(full, X_OK) == 0) {
             *out = strdup(full);
+            if (!*out) { free(path_copy); return -1; }
             found = 0;
             break;
         }
@@ -140,27 +141,13 @@ int main(int argc, char *argv[]) {
 
     if (use_tui) {
         init_tui();
-        run_scan_formatted_bpf(selected_format, use_bpf ? &bpf_state : NULL, silent_jit);
+        run_scan_formatted(selected_format, use_bpf ? &bpf_state : NULL, silent_jit);
         stop_tui();
     } else {
-        if (run_scan_formatted(selected_format, silent_jit) != 0) {
+        if (run_scan_formatted(selected_format, use_bpf ? &bpf_state : NULL, silent_jit) != 0) {
             fprintf(stderr, "%s[!] Critical error during scan%s\n", CLR_RED, CLR_RESET);
+            if (use_bpf) bpf_telemetry_shutdown(&bpf_state);
             return 1;
-        }
-        if (use_bpf) {
-            BpfRwxEvent bpf_ev;
-            int n = bpf_telemetry_drain_ring(&bpf_state, &bpf_ev, 1);
-            if (n > 0) {
-                const char *sname = "?";
-                switch (bpf_ev.syscall_nr) {
-                    case 9:  sname = "mmap"; break;
-                    case 10: sname = "mprotect"; break;
-                    case 30: sname = "shmat"; break;
-                    case 59: sname = "execve"; break;
-                }
-                printf("%s[BPF] %s -- PID %d (%s) @ %s%s\n",
-                       CLR_RED, sname, bpf_ev.pid, bpf_ev.comm, bpf_ev.addr, CLR_RESET);
-            }
         }
     }
 

@@ -1,4 +1,5 @@
 #include "../../include/scanner_core.h"
+#include "../../include/colors.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -91,4 +92,13 @@ void dispatch_regex_match(regex_match_t *match) {
     printf("\n--- AUDIT DETECTION ---\n");
     printf("Address: 0x%llx | PID: %d\n", match->address_start, match->pid);
     printf("Context: %s\n", match->context_preview);
+}
+
+void run_live_regex_scan(int pid, const char *pattern) {
+    printf("%s[+] Initializing Live Regex Hunting for PID %d%s\n",
+           CLR_YELLOW, pid, CLR_RESET);
+    if (start_live_regex_hunting(pid, pattern) != 0) {
+        printf("%s[-] Regex Hunting failed for PID %d%s\n",
+               CLR_RED, pid, CLR_RESET);
+    }
 }
