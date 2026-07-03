@@ -162,6 +162,8 @@ sudo make uninstall
 
 ### YARA Rule Scanning
 
+[![YARA](https://img.shields.io/badge/YARA-Rule%20Matching-8A2BE2?style=flat-square)](https://virustotal.github.io/yara/)
+
 [YARA](https://virustotal.github.io/yara/) is a pattern-matching engine for identifying malware samples. When you pass `--yara`, K-Scanner runs your YARA rules against forensic memory dumps to look for known threat patterns.
 
 ```bash
