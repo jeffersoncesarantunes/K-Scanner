@@ -26,7 +26,7 @@ $(TARGET): $(OBJS)
 	@mkdir -p $(DUMP_DIR) $(BPF_DIR)
 	@$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 	@strip $(TARGET)
-	@echo "OK Build successful!"
+	@echo "✅ Build successful!"
 
 $(OBJ_DIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
@@ -51,13 +51,13 @@ install: $(TARGET) bpf install-man
 	@install -m 755 $(TARGET) $(BINDIR)/$(TARGET)
 	@install -m 644 $(BPF_OBJ) $(SHAREDIR)/rwx_monitor.bpf.o
 	@sha256sum $(SHAREDIR)/rwx_monitor.bpf.o > $(SHAREDIR)/rwx_monitor.bpf.o.sha256
-	@echo "  Installed $(TARGET) to $(BINDIR)"
-	@echo "  Installed BPF object to $(SHAREDIR)"
+	@echo "  📦 Installed $(TARGET) to $(BINDIR)"
+	@echo "  📦 Installed BPF object to $(SHAREDIR)"
 
 install-man:
 	@mkdir -p $(MANDIR)
 	@install -m 644 man/kscanner.1 $(MANDIR)/kscanner.1
-	@echo "  Installed man page to $(MANDIR)"
+	@echo "  📄 Installed man page to $(MANDIR)"
 
 uninstall:
 	@rm -f $(BINDIR)/$(TARGET)
@@ -65,7 +65,7 @@ uninstall:
 	@-rmdir $(SHAREDIR) 2>/dev/null; true
 	@rm -f $(MANDIR)/kscanner.1
 	@-rmdir $(MANDIR) 2>/dev/null; true
-	@echo "  Removed $(TARGET)"
+	@echo "  🗑 Removed $(TARGET)"
 
 test: $(TARGET) bpf
 	@TMPDIR=$$(mktemp -d /tmp/kscanner_test_XXXXXX); \
@@ -96,10 +96,10 @@ triage:
 
 clean-dumps:
 	@rm -f $(DUMP_DIR)/*.bin $(DUMP_DIR)/*.sha256 $(DUMP_DIR)/*.strings.txt $(DUMP_DIR)/*.hex.txt
-	@echo "Dumps cleaned."
+	@echo "🧹 Dumps cleaned."
 
 clean:
-	@echo "Clean."
+	@echo "🧹 Clean."
 	@rm -rf build/
 	@rm -f $(TARGET)
 
