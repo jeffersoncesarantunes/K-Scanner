@@ -198,8 +198,7 @@ static void write_disassembly_file(const void *buf, size_t size, const char *out
         execvp("objdump", (char *[]){ "objdump", "-D", "-b", "binary", "-m", "i386", "-M", addr_opt, tmp_path, NULL });
         _exit(1);
     }
-    int st;
-    waitpid(child, &st, 0);
+    waitpid(child, NULL, 0);
     unlink(tmp_path);
 }
 
@@ -283,7 +282,7 @@ static void dump_memory_region(int pid, char *addr_str) {
             if (write(out_fd, buffer, size) == -1) { close(out_fd); close(fd); free(buffer); return; }
             close(out_fd);
             snprintf(fpath, sizeof(fpath), "build/dumps/%s", file_name);
-            int child, st;
+            int child;
             child = fork();
             if (child == 0) {
                 close_inherited_fds();
@@ -295,7 +294,7 @@ static void dump_memory_region(int pid, char *addr_str) {
                 execvp("sha256sum", (char *[]){ "sha256sum", fpath, NULL });
                 _exit(1);
             }
-            waitpid(child, &st, 0);
+            waitpid(child, NULL, 0);
             child = fork();
             if (child == 0) {
                 close_inherited_fds();
@@ -307,7 +306,7 @@ static void dump_memory_region(int pid, char *addr_str) {
                 execvp("strings", (char *[]){ "strings", "-n", "6", fpath, NULL });
                 _exit(1);
             }
-            waitpid(child, &st, 0);
+            waitpid(child, NULL, 0);
             snprintf(out_path, sizeof(out_path), "build/dumps/%s.hex.txt", file_name);
             write_hex_dump(fpath, out_path, 256);
             snprintf(out_path, sizeof(out_path), "build/dumps/%s.disasm.txt", file_name);

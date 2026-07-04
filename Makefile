@@ -103,4 +103,4 @@ clean:
 	@rm -rf build/
 	@rm -f $(TARGET)
 
-.PHONY: all bpf install uninstall test debug triage clean-dumps clean
+.PHONY: all bpf install install-man uninstall test debug triage clean-dumps clean
