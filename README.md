@@ -116,6 +116,9 @@ git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
 cd K-Scanner
 
 # Build the project (BPF object + main binary)
+make bpf && make
+
+# (Optional) Clean rebuild
 make clean && make bpf && make
 
 # Run automated tests
