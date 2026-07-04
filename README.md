@@ -12,7 +12,7 @@ Lightweight Linux memory auditing tool focused on RWX detection and automated fo
 [![Docker](https://img.shields.io/badge/Docker-Multi--stage-2496ED?style=flat-square&logo=docker)](Dockerfile)
 [![Tested-on](https://img.shields.io/badge/Tested%20on-Arch%20Linux-1793D1?style=flat-square&logo=arch-linux)](https://security.archlinux.org/)
 [![Domain](https://img.shields.io/badge/Domain-Live%20Memory%20Forensics-8A2BE2?style=flat-square)](./docs/forensic_methodology.md)
-[![YARA](https://img.shields.io/badge/YARA-Rule%20Matching-8A2BE2?style=flat-square)](https://virustotal.github.io/yara/)
+[![YARA](https://img.shields.io/badge/YARA-Rule%20Matching-FF6F00?style=flat-square)](https://virustotal.github.io/yara/)
 
 
 ---
