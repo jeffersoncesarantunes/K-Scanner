@@ -12,6 +12,7 @@ Lightweight Linux memory auditing tool focused on RWX detection and automated fo
 [![Docker](https://img.shields.io/badge/Docker-Multi--stage-2496ED?style=flat-square&logo=docker)](Dockerfile)
 [![Tested-on](https://img.shields.io/badge/Tested%20on-Arch%20Linux-1793D1?style=flat-square&logo=arch-linux)](https://security.archlinux.org/)
 [![Domain](https://img.shields.io/badge/Domain-Live%20Memory%20Forensics-8A2BE2?style=flat-square)](./docs/forensic_methodology.md)
+[![YARA](https://img.shields.io/badge/YARA-Rule%20Matching-8A2BE2?style=flat-square)](https://virustotal.github.io/yara/)
 
 
 ---
@@ -162,7 +163,7 @@ sudo make uninstall
 
 ### YARA Rule Scanning
 
-[![YARA](https://img.shields.io/badge/YARA-Rule%20Matching-8A2BE2?style=flat-square)](https://virustotal.github.io/yara/) is a pattern-matching engine for identifying malware samples. When you pass `--yara`, K-Scanner runs your YARA rules against forensic memory dumps to look for known threat patterns.
+<span style="color:#7C3AED;font-weight:700;border-bottom:2px solid #7C3AED;">YARA</span> is a pattern-matching engine for identifying malware samples. When you pass `--yara`, K-Scanner runs your YARA rules against forensic memory dumps to look for known threat patterns.
 
 ```bash
 # Install YARA (optional, required for --yara)
