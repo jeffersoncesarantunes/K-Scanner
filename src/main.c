@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "../include/kscanner.h"
 #include "../include/scanner_core.h"
 #include "../include/colors.h"
@@ -23,7 +25,8 @@ static int resolve_binary_path(const char *name, char **out) {
     dir = strtok(path_copy, ":");
     while (dir) {
         snprintf(full, sizeof(full), "%s/%s", dir, name);
-        if (access(full, X_OK) == 0) {
+        struct stat st;
+        if (stat(full, &st) == 0 && S_ISREG(st.st_mode) && (st.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))) {
             *out = strdup(full);
             if (!*out) { free(path_copy); return -1; }
             found = 0;
@@ -103,10 +106,12 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "--yara") == 0) {
             if (i + 1 < argc) {
                 yara_rule = argv[++i];
-                if (access(yara_rule, R_OK) != 0) {
+                int rule_fd = open(yara_rule, O_RDONLY);
+                if (rule_fd == -1) {
                     fprintf(stderr, "Error: --yara rule file not readable: %s\n", yara_rule);
                     return 1;
                 }
+                close(rule_fd);
                 char *yara_bin = NULL;
                 if (resolve_binary_path("yara", &yara_bin) != 0) {
                     fprintf(stderr, "Error: 'yara' binary not found in PATH\n");

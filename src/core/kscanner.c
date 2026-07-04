@@ -78,10 +78,6 @@ static void close_inherited_fds(void) {
 }
 
 static void scan_with_yara(const char *dump_path, const char *rule_path, const char *out_path) {
-    if (access(rule_path, R_OK) != 0 || access(g_yara_binary, X_OK) != 0) {
-        fprintf(stderr, "[!] YARA rule or binary not accessible: %s\n", rule_path);
-        return;
-    }
     pid_t child = fork();
     if (child == 0) {
         close_inherited_fds();
@@ -94,6 +90,8 @@ static void scan_with_yara(const char *dump_path, const char *rule_path, const c
     }
     int st;
     waitpid(child, &st, 0);
+    if (WIFEXITED(st) && WEXITSTATUS(st) != 0)
+        fprintf(stderr, "[!] YARA scan failed (exit %d): %s\n", WEXITSTATUS(st), rule_path);
 }
 
 static void write_hex_dump(const char *in_path, const char *out_path, size_t max_lines) {
