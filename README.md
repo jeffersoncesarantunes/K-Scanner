@@ -108,63 +108,53 @@ Not every RWX region is malicious — context matters.
 
 ---
 
-## Build and Run
+## Quick Start
 
 ```bash
-# Clone the repository
 git clone https://github.com/jeffersoncesarantunes/K-Scanner.git
-cd K-Scanner
-
-# Build the project (BPF object + main binary)
-make bpf && make
-
-# (Optional) Clean rebuild
-make clean && make bpf && make
-
-# Run automated tests
-make test
-
-# Install system-wide (binary + BPF object)
-sudo make install
-
-# --- Usage ---
-
-# Help
-./kscanner --help
-
-# Standard execution (TUI)
+cd K-Scanner && make bpf && make
 sudo ./kscanner
-
-# Suppress JIT engine false positives (browsers, Node.js, etc.)
-sudo ./kscanner --silent-jit
-
-# JSON/CSV export (headless)
-sudo ./kscanner --json
-sudo ./kscanner --csv
-
-# Live regex memory hunting
-sudo ./kscanner --live <PID> '<regex>'
-
-# eBPF real-time RWX monitoring
-sudo ./kscanner --bpf
-
-# Continuous headless monitoring (2-second cycles, Ctrl+C to exit)
-sudo ./kscanner --watch
-
-# Continuous monitoring in JSON-Lines format
-sudo ./kscanner --watch --json
-
-# TUI mode with YARA rule scanning on forensic dumps
-sudo ./kscanner --yara /path/to/rules.yara
-
-# TUI with BPF telemetry + YARA + container awareness (all flags combined)
-sudo ./kscanner --bpf --silent-jit --yara myrules.yara
-
-# Uninstall
-sudo make uninstall
 ```
 
-### YARA Rule Scanning
+## Build
+
+```bash
+make bpf && make          # Build BPF object + main binary
+make clean && make bpf && make  # Clean rebuild
+make test                 # Run automated tests
+sudo make install         # Install system-wide (binary + BPF object)
+sudo make uninstall       # Uninstall
+```
+
+## Usage
+
+### General
+
+```bash
+./kscanner --help                  # Help
+sudo ./kscanner                    # Standard execution (TUI)
+sudo ./kscanner --silent-jit       # Suppress JIT false positives (browsers, Node.js, etc.)
+sudo ./kscanner --bpf              # eBPF real-time RWX monitoring
+sudo ./kscanner --watch            # Continuous headless monitoring (2s cycles, Ctrl+C to exit)
+```
+
+### Export
+
+```bash
+sudo ./kscanner --json        # JSON export (headless)
+sudo ./kscanner --csv         # CSV export (headless)
+sudo ./kscanner --watch --json  # Continuous monitoring in JSON-Lines format
+```
+
+### Advanced
+
+```bash
+sudo ./kscanner --live <PID> '<regex>'          # Live regex memory hunting
+sudo ./kscanner --yara /path/to/rules.yara      # YARA rule scanning on forensic dumps
+sudo ./kscanner --bpf --silent-jit --yara myrules.yara  # Combine all flags
+```
+
+### YARA
 
 <span style="color:#7C3AED;font-weight:700;border-bottom:2px solid #7C3AED;">YARA</span> is a pattern-matching engine for identifying malware samples. When you pass `--yara`, K-Scanner runs your YARA rules against forensic memory dumps to look for known threat patterns.
 
