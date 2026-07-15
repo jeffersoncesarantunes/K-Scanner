@@ -119,11 +119,16 @@ sudo ./kscanner
 ## Build
 
 ```bash
-make bpf && make          # Build BPF object + main binary
+make bpf && make              # Build BPF object + main binary
 make clean && make bpf && make  # Clean rebuild
-make test                 # Run automated tests
-sudo make install         # Install system-wide (binary + BPF object)
-sudo make uninstall       # Uninstall
+make test                     # Run automated tests
+```
+
+## Deploy
+
+```bash
+sudo make install     # Install system-wide (binary + BPF object)
+sudo make uninstall   # Uninstall
 ```
 
 ## Usage
