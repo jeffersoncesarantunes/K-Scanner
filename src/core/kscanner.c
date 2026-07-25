@@ -323,6 +323,22 @@ static void dump_memory_region(int pid, char *addr_str) {
     free(buffer);
 }
 
+static int verify_pid_still_valid(int pid) {
+    char path[256], line[64];
+    snprintf(path, sizeof(path), "/proc/%d/status", pid);
+    FILE *f = fopen(path, "r");
+    if (!f) return 0;
+    int found_pid = 0;
+    while (fgets(line, sizeof(line), f)) {
+        if (sscanf(line, "Pid:\t%d", &found_pid) == 1 && found_pid == pid) {
+            fclose(f);
+            return 1;
+        }
+    }
+    fclose(f);
+    return 0;
+}
+
 static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLevel *out_conf) {
     char path[256], line[512], addr[64], perms[8], pathname[256];
     int found_count = 0;
@@ -330,6 +346,7 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLeve
     snprintf(path, sizeof(path), "/proc/%d/maps", pid);
     FILE *f = fopen(path, "r");
     if (!f) return 0;
+    if (!verify_pid_still_valid(pid)) { fclose(f); return 0; }
     while (fgets(line, sizeof(line), f)) {
         if (strstr(line, "rwxp")) {
             pathname[0] = '\0';
