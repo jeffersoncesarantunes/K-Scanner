@@ -9,7 +9,6 @@ Lightweight Linux memory auditing tool focused on RWX detection and automated fo
 [![Status](https://img.shields.io/badge/Status-Active-00A86B?style=flat-square)](#-roadmap)
 [![CI](https://img.shields.io/github/actions/workflow/status/jeffersoncesarantunes/K-Scanner/ci.yml?style=flat-square&logo=githubactions&label=CI)](https://github.com/jeffersoncesarantunes/K-Scanner/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/jeffersoncesarantunes/K-Scanner/codeql.yml?style=flat-square&logo=githubactions&label=CodeQL)](https://github.com/jeffersoncesarantunes/K-Scanner/actions/workflows/codeql.yml)
-[![Docker](https://img.shields.io/badge/Docker-Multi--stage-2496ED?style=flat-square&logo=docker)](Dockerfile)
 [![Tested-on](https://img.shields.io/badge/Tested%20on-Arch%20Linux-1793D1?style=flat-square&logo=arch-linux)](https://security.archlinux.org/)
 [![Domain](https://img.shields.io/badge/Domain-Live%20Memory%20Forensics-8A2BE2?style=flat-square)](./docs/forensic_methodology.md)
 [![YARA](https://img.shields.io/badge/YARA-Rule%20Matching-FF6F00?style=flat-square)](https://virustotal.github.io/yara/)
@@ -29,6 +28,8 @@ The name **K-Scanner** comes from the Linux **Kernel** — it's all about inspec
 K-Scanner is a lightweight forensic utility that inspects active Linux processes for memory regions violating the **W^X (Write XOR Execute)** security principle.
 
 Written in pure **C99**, it pairs a high-performance scanning engine with an interactive **ncurses-based Brutalist TUI** so you can navigate processes, spot RWX regions, and extract forensic evidence in real time.
+
+**Container note:** host memory inspection must run natively with the required privileges. A container only sees its own PID and memory namespace unless it is given host-level access, so no Docker image is provided.
 
 Common RWX scenarios you'll run into:
 
