@@ -8,5 +8,6 @@ int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_j
 int run_watch_loop(ExportFormat format, int silent_jit);
 void set_yara_rule_path(const char *path);
 void set_yara_binary_path(const char *path);
+void set_dump_dir(const char *path);
 
 #endif

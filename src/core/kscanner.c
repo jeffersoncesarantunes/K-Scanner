@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <limits.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <ncurses.h>
@@ -18,6 +19,34 @@
 
 static const char *g_yara_rule = NULL;
 static char *g_yara_binary = NULL;
+static char g_dump_dir[PATH_MAX] = "build/dumps";
+
+void set_dump_dir(const char *path) {
+    if (!path || !*path) return;
+    snprintf(g_dump_dir, sizeof(g_dump_dir), "%s", path);
+}
+
+static const char *dump_dir(void) {
+    const char *env = getenv("KSCANNER_DUMP_DIR");
+    if (env && *env) return env;
+    return g_dump_dir;
+}
+
+static int ensure_dump_dir(void) {
+    char tmp[PATH_MAX];
+    snprintf(tmp, sizeof(tmp), "%s", dump_dir());
+    size_t len = strlen(tmp);
+    if (len == 0 || len >= sizeof(tmp)) return -1;
+    if (tmp[len - 1] == '/') tmp[len - 1] = '\0';
+    for (char *p = tmp + 1; *p; p++) {
+        if (*p != '/') continue;
+        *p = '\0';
+        if (mkdir(tmp, 0750) != 0 && errno != EEXIST) return -1;
+        *p = '/';
+    }
+    if (mkdir(tmp, 0750) != 0 && errno != EEXIST) return -1;
+    return 0;
+}
 
 void set_yara_rule_path(const char *path) {
     g_yara_rule = path;
@@ -78,6 +107,7 @@ static void close_inherited_fds(void) {
 }
 
 static void scan_with_yara(const char *dump_path, const char *rule_path, const char *out_path) {
+    if (!g_yara_binary) return;
     pid_t child = fork();
     if (child == 0) {
         close_inherited_fds();
@@ -86,12 +116,15 @@ static void scan_with_yara(const char *dump_path, const char *rule_path, const c
         if (dup2(fd, STDOUT_FILENO) == -1) _exit(1);
         close(fd);
         execv(g_yara_binary, (char *[]){ "yara", "-w", (char *)rule_path, (char *)dump_path, NULL });
-        _exit(1);
+        _exit(127);
     }
-    int st;
-    waitpid(child, &st, 0);
-    if (WIFEXITED(st) && WEXITSTATUS(st) != 0)
-        fprintf(stderr, "[!] YARA scan failed (exit %d): %s\n", WEXITSTATUS(st), rule_path);
+    if (child < 0) {
+        fprintf(stderr, "[!] YARA fork failed: %s\n", strerror(errno));
+        return;
+    }
+    int st = 0;
+    if (waitpid(child, &st, 0) != child || !WIFEXITED(st) || WEXITSTATUS(st) != 0)
+        fprintf(stderr, "[!] YARA scan failed: %s\n", rule_path);
 }
 
 static void write_hex_dump(const char *in_path, const char *out_path, size_t max_lines) {
@@ -125,6 +158,11 @@ static void scan_shellcode_patterns(const void *buf, size_t size, const char *ou
     const unsigned char *p = (const unsigned char *)buf;
     size_t scan = (size > 4096) ? 4096 : size;
     int found = 0;
+    if (scan < 8) {
+        fprintf(out, "NO_SUSPICIOUS_PATTERNS\n");
+        fclose(out);
+        return;
+    }
 
     int nop_count = 0, nop_max = 0;
     for (size_t i = 0; i < scan; i++) {
@@ -141,7 +179,7 @@ static void scan_shellcode_patterns(const void *buf, size_t size, const char *ou
     }
 
     int sc = 0, i80 = 0;
-    for (size_t i = 0; i < scan - 1; i++) {
+    for (size_t i = 0; i + 1 < scan; i++) {
         if (p[i] == 0x0f && p[i+1] == 0x05) sc++;
         if (p[i] == 0xcd && p[i+1] == 0x80) i80++;
     }
@@ -149,7 +187,7 @@ static void scan_shellcode_patterns(const void *buf, size_t size, const char *ou
     if (i80 > 0) { fprintf(out, "INT_0x80 %dx\n", i80); found = 1; }
 
     int jr = 0, js = 0, jd = 0;
-    for (size_t i = 0; i < scan - 1; i++) {
+    for (size_t i = 0; i + 1 < scan; i++) {
         if (p[i] == 0xff) {
             if (p[i+1] == 0xe0) jr++;
             if (p[i+1] == 0xe4) js++;
@@ -161,14 +199,14 @@ static void scan_shellcode_patterns(const void *buf, size_t size, const char *ou
     if (jd > 0) { fprintf(out, "JMP_RDI %dx\n", jd); found = 1; }
 
     int pr = 0;
-    for (size_t i = 0; i < scan - 2; i++) {
+    for (size_t i = 0; i + 2 < scan; i++) {
         if (p[i+1] == 0xc3 && (p[i] == 0x5f || p[i] == 0x5e || p[i] == 0x5a || p[i] == 0x58))
             pr++;
     }
     if (pr > 0) { fprintf(out, "POP_RET_ROPGADGET %dx\n", pr); found = 1; }
 
     int bs = 0;
-    for (size_t i = 0; i < scan - 7; i++)
+    for (size_t i = 0; i + 7 < scan; i++)
         if (p[i] == '/' && memcmp(p + i, "/bin/sh", 7) == 0) bs++;
     if (bs > 0) { fprintf(out, "BINSH_STRING %dx\n", bs); found = 1; }
 
@@ -178,7 +216,7 @@ static void scan_shellcode_patterns(const void *buf, size_t size, const char *ou
 
 static void write_disassembly_file(const void *buf, size_t size, const char *out_path, unsigned long start_addr) {
     size_t trunc = (size > 4096) ? 4096 : size;
-    char tmp_path[512];
+    char tmp_path[PATH_MAX * 2 + 8];
     snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", out_path);
     FILE *tmp = fopen(tmp_path, "wb");
     if (!tmp) return;
@@ -196,9 +234,12 @@ static void write_disassembly_file(const void *buf, size_t size, const char *out
         if (dup2(fd, STDOUT_FILENO) == -1) _exit(1);
         close(fd);
         execvp("objdump", (char *[]){ "objdump", "-D", "-b", "binary", "-m", "i386", "-M", addr_opt, tmp_path, NULL });
-        _exit(1);
+        _exit(127);
     }
-    waitpid(child, NULL, 0);
+    int st = 0;
+    if (child < 0 || waitpid(child, &st, 0) != child ||
+        !WIFEXITED(st) || WEXITSTATUS(st) != 0)
+        fprintf(stderr, "[!] objdump unavailable or failed for %s\n", out_path);
     unlink(tmp_path);
 }
 
@@ -247,8 +288,8 @@ static ConfidenceLevel map_context_tag(const char* path, char *out_tag, size_t t
 }
 
 static void dump_memory_region(int pid, char *addr_str) {
-    char mem_path[256], out_path[256], line[512];
-    char file_name[128], fpath[512];
+    char mem_path[PATH_MAX], out_path[PATH_MAX * 2], line[512];
+    char file_name[128], fpath[PATH_MAX * 2];
     unsigned long start, end;
     snprintf(mem_path, sizeof(mem_path), "/proc/%d/maps", pid);
     FILE *f = fopen(mem_path, "r");
@@ -272,21 +313,32 @@ static void dump_memory_region(int pid, char *addr_str) {
     snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
     int fd = open(mem_path, O_RDONLY);
     if (fd == -1) { free(buffer); return; }
-    if (pread(fd, buffer, size, (off_t)start) == (ssize_t)size) {
-        mkdir("build", 0750);
-        mkdir("build/dumps", 0750);
+    ssize_t got = 0;
+    while ((size_t)got < size) {
+        ssize_t n = pread(fd, (char *)buffer + got, size - (size_t)got,
+                          (off_t)start + got);
+        if (n <= 0) break;
+        got += n;
+    }
+    if ((size_t)got == size && ensure_dump_dir() == 0) {
         snprintf(file_name, sizeof(file_name), "pid_%d_%lx.bin", pid, start);
-        snprintf(out_path, sizeof(out_path), "build/dumps/%s", file_name);
+        snprintf(out_path, sizeof(out_path), "%s/%s", dump_dir(), file_name);
         int out_fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
         if (out_fd != -1) {
-            if (write(out_fd, buffer, size) == -1) { close(out_fd); close(fd); free(buffer); return; }
+            size_t written = 0;
+            while (written < size) {
+                ssize_t n = write(out_fd, (char *)buffer + written, size - written);
+                if (n <= 0) break;
+                written += (size_t)n;
+            }
             close(out_fd);
-            snprintf(fpath, sizeof(fpath), "build/dumps/%s", file_name);
+            if (written != size) { close(fd); free(buffer); return; }
+            snprintf(fpath, sizeof(fpath), "%s/%s", dump_dir(), file_name);
             int child;
             child = fork();
             if (child == 0) {
                 close_inherited_fds();
-                snprintf(out_path, sizeof(out_path), "build/dumps/%s.sha256", file_name);
+                snprintf(out_path, sizeof(out_path), "%s/%s.sha256", dump_dir(), file_name);
                 int ofd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0600);
                 if (ofd == -1) _exit(1);
                 if (dup2(ofd, STDOUT_FILENO) == -1) _exit(1);
@@ -294,11 +346,14 @@ static void dump_memory_region(int pid, char *addr_str) {
                 execvp("sha256sum", (char *[]){ "sha256sum", fpath, NULL });
                 _exit(1);
             }
-            waitpid(child, NULL, 0);
+            int st = 0;
+            if (child < 0 || waitpid(child, &st, 0) != child ||
+                !WIFEXITED(st) || WEXITSTATUS(st) != 0)
+                fprintf(stderr, "[!] sha256sum unavailable or failed\n");
             child = fork();
             if (child == 0) {
                 close_inherited_fds();
-                snprintf(out_path, sizeof(out_path), "build/dumps/%s.strings.txt", file_name);
+                snprintf(out_path, sizeof(out_path), "%s/%s.strings.txt", dump_dir(), file_name);
                 int ofd = open(out_path, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0600);
                 if (ofd == -1) _exit(1);
                 if (dup2(ofd, STDOUT_FILENO) == -1) _exit(1);
@@ -306,15 +361,18 @@ static void dump_memory_region(int pid, char *addr_str) {
                 execvp("strings", (char *[]){ "strings", "-n", "6", fpath, NULL });
                 _exit(1);
             }
-            waitpid(child, NULL, 0);
-            snprintf(out_path, sizeof(out_path), "build/dumps/%s.hex.txt", file_name);
+            st = 0;
+            if (child < 0 || waitpid(child, &st, 0) != child ||
+                !WIFEXITED(st) || WEXITSTATUS(st) != 0)
+                fprintf(stderr, "[!] strings unavailable or failed\n");
+            snprintf(out_path, sizeof(out_path), "%s/%s.hex.txt", dump_dir(), file_name);
             write_hex_dump(fpath, out_path, 256);
-            snprintf(out_path, sizeof(out_path), "build/dumps/%s.disasm.txt", file_name);
+            snprintf(out_path, sizeof(out_path), "%s/%s.disasm.txt", dump_dir(), file_name);
             write_disassembly_file(buffer, size, out_path, start);
-            snprintf(out_path, sizeof(out_path), "build/dumps/%s.shellcode.txt", file_name);
+            snprintf(out_path, sizeof(out_path), "%s/%s.shellcode.txt", dump_dir(), file_name);
             scan_shellcode_patterns(buffer, size, out_path);
             if (g_yara_rule) {
-                snprintf(out_path, sizeof(out_path), "build/dumps/%s.yara.txt", file_name);
+                snprintf(out_path, sizeof(out_path), "%s/%s.yara.txt", dump_dir(), file_name);
                 scan_with_yara(fpath, g_yara_rule, out_path);
             }
         }
@@ -381,9 +439,8 @@ static void get_process_name(int pid, char *out_name) {
     snprintf(path, sizeof(path), "/proc/%d/comm", pid);
     FILE *f = fopen(path, "r");
     if (f) {
-        if (fgets(out_name, 33, f)) {
-            out_name[strcspn(out_name, "\n")] = 0;
-        }
+        if (!fgets(out_name, 33, f)) snprintf(out_name, 33, "%s", "unknown");
+        else out_name[strcspn(out_name, "\n")] = 0;
         fclose(f);
     } else {
         snprintf(out_name, 33, "%s", "unknown");
@@ -475,12 +532,17 @@ int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_j
 
             attron(COLOR_PAIR(3) | A_BOLD);
             char cnt_info[32] = "";
-            if (records[selected].container_id[0])
+            int valid = (count > 0 && selected >= 0 && selected < count);
+            if (valid && records[selected].container_id[0])
                 snprintf(cnt_info, sizeof(cnt_info), " | CTN:%.12s", records[selected].container_id);
-            mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | BPF: %s | TARGET: %-15.15s (PID: %-6d)%s",
-                     rwx_total,
-                     (bpf && bpf->active) ? "ON " : "OFF",
-                     records[selected].process_name, records[selected].pid, cnt_info);
+            if (valid)
+                mvprintw(LINES - 1, 0, " [ENTER] ANALYZE | [Q] EXIT | ALERTS: %02d | BPF: %s | TARGET: %-15.15s (PID: %-6d)%s",
+                         rwx_total,
+                         (bpf && bpf->active) ? "ON " : "OFF",
+                         records[selected].process_name, records[selected].pid, cnt_info);
+            else
+                mvprintw(LINES - 1, 0, " [Q] EXIT | ALERTS: %02d | BPF: %s | No processes found",
+                         rwx_total, (bpf && bpf->active) ? "ON " : "OFF");
             for (int i = getcurx(stdscr); i < COLS; i++) printw(" ");
             attroff(COLOR_PAIR(3) | A_BOLD);
             refresh();
@@ -498,6 +560,7 @@ int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_j
                     running = 0;
                     break;
                 case 10:
+                    if (!valid) break;
                     if (strcmp(records[selected].mem_addr, "n/a") != 0) {
                         attron(COLOR_PAIR(2) | A_BOLD | A_REVERSE);
                         mvprintw(LINES - 1, 0, " [!] ACTION: PERFORMING DEEP MEMORY SCAN ON PID %d... ", records[selected].pid);
@@ -531,7 +594,7 @@ int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_j
         export_footer(format);
         if (bpf && bpf->active) {
             bpf_telemetry_poll(bpf);
-            bpf_drain_and_print(bpf);
+            if (format == EXPORT_TERMINAL) bpf_drain_and_print(bpf);
         }
     }
 
@@ -575,11 +638,13 @@ int run_watch_loop(ExportFormat format, int silent_jit) {
                        records[i].status, cl, records[i].info_path);
             }
             printf("--- ALERTS: %d / SCANNED: %d ---\n", rwx_total, count);
+        } else if (format == EXPORT_JSON) {
+            for (int i = 0; i < count; i++)
+                export_record_jsonl(&records[i]);
         } else {
-            export_header(format);
+            if (cycle == 1) export_header(format);
             for (int i = 0; i < count; i++)
                 export_record(&records[i], format);
-            export_footer(format);
         }
 
         free(records);

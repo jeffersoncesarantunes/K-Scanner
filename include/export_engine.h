@@ -28,6 +28,7 @@ typedef struct {
 
 void export_header(ExportFormat format);
 void export_record(const ForensicRecord *record, ExportFormat format);
+void export_record_jsonl(const ForensicRecord *record);
 void export_footer(ExportFormat format);
 
 #endif

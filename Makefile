@@ -68,25 +68,7 @@ uninstall:
 	@echo "  🗑 Removed $(TARGET)"
 
 test: $(TARGET) bpf
-	@TMPDIR=$$(mktemp -d /tmp/kscanner_test_XXXXXX); \
-	echo ""; \
-	echo "--- Test 1: Help output ---"; \
-	./$(TARGET) --help > $$TMPDIR/help.txt 2>&1; \
-	grep -q "Usage:" $$TMPDIR/help.txt && echo "  PASS" || echo "  FAIL"; \
-	echo ""; \
-	echo "--- Test 2: JSON export (headless) ---"; \
-	./$(TARGET) --json > $$TMPDIR/json.txt 2>&1; \
-	grep -q '^\[' $$TMPDIR/json.txt && echo "  PASS" || echo "  FAIL"; \
-	echo ""; \
-	echo "--- Test 3: CSV export (headless) ---"; \
-	./$(TARGET) --csv > $$TMPDIR/csv.txt 2>&1; \
-	grep -q "PID,PROCESS" $$TMPDIR/csv.txt && echo "  PASS" || echo "  FAIL"; \
-	echo ""; \
-	echo "--- Test 4: BPF object integrity ---"; \
-	rm -rf $$TMPDIR; \
-	test -f $(BPF_OBJ) && readelf -S $(BPF_OBJ) >/dev/null 2>&1 && echo "  PASS" || echo "  FAIL"
-	@test -f $(BPF_OBJ) && readelf -S $(BPF_OBJ) >/dev/null 2>&1 && echo "  PASS" || echo "  FAIL"
-	@echo ""
+	@bash tests/run_tests.sh
 
 debug:
 	@$(MAKE) CFLAGS="-Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE -DDEBUG" clean $(TARGET)

@@ -49,6 +49,8 @@ static void print_main_usage(void) {
     printf("  --silent-jit          Suppress JIT engine RWX from alert count (reduce FP)\n");
     printf("  --watch               Continuous headless monitoring (2s cycles, Ctrl+C to exit)\n");
     printf("  --yara <rule.yara>    Scan forensic dumps with YARA rules (requires yara)\n");
+    printf("  --dump-dir <dir>      Forensic dump directory (default: build/dumps)\n");
+    printf("  --version             Show version\n");
     printf("  --help                Show this help message\n");
 }
 
@@ -73,6 +75,7 @@ int main(int argc, char *argv[]) {
     int silent_jit = 0;
     int use_watch = 0;
     const char *yara_rule = NULL;
+    const char *dump_dir = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--live") == 0) {
@@ -123,8 +126,17 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "Error: --yara requires a rule file path\n");
                 return 1;
             }
+        } else if (strcmp(argv[i], "--dump-dir") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "Error: --dump-dir requires a directory\n");
+                return 1;
+            }
+            dump_dir = argv[++i];
         } else if (strcmp(argv[i], "--help") == 0) {
             print_main_usage();
+            return 0;
+        } else if (strcmp(argv[i], "--version") == 0) {
+            printf("K-Scanner v1.0.0\n");
             return 0;
         }
     }
@@ -137,6 +149,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (yara_rule) set_yara_rule_path(yara_rule);
+    if (dump_dir) set_dump_dir(dump_dir);
 
     if (use_watch) {
         run_watch_loop(selected_format, silent_jit);

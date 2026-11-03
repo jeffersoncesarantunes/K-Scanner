@@ -14,6 +14,7 @@ int start_live_regex_hunting(pid_t pid, const char *pattern) {
     regmatch_t pmatch[1];
     int found_count = 0;
 
+    if (!pattern || !*pattern) return -1;
     if (regcomp(&regex, pattern, REG_EXTENDED) != 0) return -1;
 
     snprintf(maps_path, sizeof(maps_path), "/proc/%d/maps", pid);
@@ -40,10 +41,11 @@ int start_live_regex_hunting(pid_t pid, const char *pattern) {
 
         if (perms[0] != 'r' || strstr(line, "/usr/share/fonts")) continue;
 
-        size_t region_size = end - start;
+        if (end <= start) continue;
+        size_t region_size = (size_t)(end - start);
         if (region_size > 100 * 1024 * 1024) continue; 
 
-        char *buffer = malloc(region_size);
+        char *buffer = malloc(region_size + 1);
         if (!buffer) {
             fprintf(stderr, "[!] OOM: pid %d, region 0x%llx-0x%llx (%zu bytes)\n",
                     pid, start, end, region_size);
@@ -53,6 +55,7 @@ int start_live_regex_hunting(pid_t pid, const char *pattern) {
         ssize_t bytes_read = pread(mem_fd, buffer, region_size, start);
         
         if (bytes_read > 0) {
+            buffer[bytes_read] = '\0';
             char *current_pos = buffer;
             size_t remaining = (size_t)bytes_read;
 
@@ -67,6 +70,7 @@ int start_live_regex_hunting(pid_t pid, const char *pattern) {
                 
                 size_t copy_len = (remaining - preview_start > 60) ? 60 : (remaining - preview_start);
                 memcpy(match.context_preview, current_pos + preview_start, copy_len);
+                match.context_preview[copy_len] = '\0';
 
                 dispatch_regex_match(&match);
                 

@@ -15,16 +15,19 @@ static const char* conf_level_str(ConfidenceLevel c) {
 
 static void json_escape(FILE *f, const char *s) {
     fputc('"', f);
-    while (*s) {
-        switch (*s) {
-            case '"':  fprintf(f, "\\\""); break;
-            case '\\': fprintf(f, "\\\\"); break;
-            case '\n': fprintf(f, "\\n");  break;
-            case '\r': fprintf(f, "\\r");  break;
-            case '\t': fprintf(f, "\\t");  break;
-            default:   fputc(*s, f);       break;
+    for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
+        switch (*p) {
+            case '"':  fputs("\\\"", f); break;
+            case '\\': fputs("\\\\", f); break;
+            case '\b': fputs("\\b", f); break;
+            case '\f': fputs("\\f", f); break;
+            case '\n': fputs("\\n", f); break;
+            case '\r': fputs("\\r", f); break;
+            case '\t': fputs("\\t", f); break;
+            default:
+                if (*p < 0x20 || *p >= 0x7f) fprintf(f, "\\u%04x", *p);
+                else fputc(*p, f);
         }
-        s++;
     }
     fputc('"', f);
 }
@@ -106,6 +109,20 @@ void export_record(const ForensicRecord *record, ExportFormat format) {
                    record->info_path);
             break;
     }
+}
+
+void export_record_jsonl(const ForensicRecord *record) {
+    printf("{\"pid\":%d,\"process\":", record->pid);
+    json_escape(stdout, record->process_name);
+    printf(",\"status\":");
+    json_escape(stdout, record->status);
+    printf(",\"confidence\":\"%s\",\"info\":", conf_level_str(record->confidence));
+    json_escape(stdout, record->info_path);
+    printf(",\"addr\":");
+    json_escape(stdout, record->mem_addr);
+    printf(",\"container\":");
+    json_escape(stdout, record->container_id);
+    printf("}\n");
 }
 
 void export_footer(ExportFormat format) {
