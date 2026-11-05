@@ -25,7 +25,7 @@ Descreva o que você esperava que acontecesse.
 
 * Linux distro/versão: [ex. Arch Linux]
 * Kernel versão: [ex. 6.x]
-* K-Scanner versão/commit: [ex. v1.0.0 / abc123]
+* K-Scanner versão/commit: [ex. main / abc123]
 * Arquitetura: [ex. x86_64]
 * Root privileges: [sim/não]
 

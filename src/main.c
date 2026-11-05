@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
             print_main_usage();
             return 0;
         } else if (strcmp(argv[i], "--version") == 0) {
-            printf("K-Scanner v1.0.0\n");
+            printf("K-Scanner (development build)\n");
             return 0;
         }
     }
