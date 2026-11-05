@@ -17,6 +17,8 @@ TEST_CC ?= cc
 TEST_CFLAGS = -Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE
 TEST_TARGET = tests/unit/test_portable
 TEST_SRC = tests/unit/test_portable.c src/core/scanner_pure.c src/modules/export_engine.c
+TEST_COV_CFLAGS = $(TEST_CFLAGS) --coverage
+TEST_COV_LDFLAGS = --coverage
 
 HAVE_LIBBPF := $(shell pkg-config --exists libbpf 2>/dev/null && echo 1 || echo 0)
 
@@ -79,9 +81,14 @@ test-unit: $(TEST_TARGET)
 	@echo "🧪 Running portable unit tests (no root required)..."
 	@./$(TEST_TARGET)
 
+test-coverage: $(TEST_TARGET)
+	@echo "🧪 Running portable unit tests with coverage..."
+	@$(MAKE) $(TEST_TARGET) TEST_CFLAGS="$(TEST_COV_CFLAGS)" LDFLAGS="$(TEST_COV_LDFLAGS)"
+	@./$(TEST_TARGET)
+
 $(TEST_TARGET): $(TEST_SRC) include/scanner_pure.h include/export_engine.h
 	@mkdir -p tests/unit
-	@$(TEST_CC) $(TEST_CFLAGS) $(TEST_SRC) -o $(TEST_TARGET)
+	@$(TEST_CC) $(TEST_CFLAGS) $(TEST_SRC) -o $(TEST_TARGET) $(LDFLAGS)
 
 debug:
 	@$(MAKE) CFLAGS="-Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE -DDEBUG" clean $(TARGET)
@@ -98,4 +105,4 @@ clean:
 	@rm -rf build/
 	@rm -f $(TARGET)
 
-.PHONY: all bpf install install-man uninstall test debug triage clean-dumps clean
+.PHONY: all bpf install install-man uninstall test debug triage clean-dumps clean test-coverage

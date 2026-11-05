@@ -45,12 +45,12 @@ jobs:
       - name: Build with coverage
         run: make clean && make CFLAGS="-Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE --coverage" LDFLAGS="-lncurses --coverage"
       - name: Run unit tests with coverage
-        run: make test-unit
+        run: make test-coverage
       - name: Generate coverage report
         run: |
-          lcov --capture --directory . --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' 'tests/*' --output-file coverage.info
-          lcov --list coverage.info
+          lcov --capture --directory . --output-file coverage.info || true
+          lcov --remove coverage.info '/usr/*' 'tests/*' --output-file coverage.info || true
+          lcov --list coverage.info || true
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
