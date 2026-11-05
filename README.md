@@ -7,6 +7,20 @@ triage.
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/jeffersoncesarantunes/K-Scanner/codeql.yml?style=flat-square&logo=codeql&label=CodeQL)](https://github.com/jeffersoncesarantunes/K-Scanner/actions/workflows/codeql.yml)
 [![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square&logo=license&logoColor=white)](LICENSE)
 
+## Table of Contents
+
+- [What K-Scanner is](#what-k-scanner-is)
+- [Forensic workflow](#forensic-workflow)
+- [Get started](#get-started)
+- [Usage modes](#usage-modes)
+- [Example output](#example-output)
+- [Extracted artifacts](#extracted-artifacts)
+- [Project in Action](#project-in-action)
+- [When not to use K-Scanner](#when-not-to-use-k-scanner)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## What K-Scanner is
 
 K-Scanner inspects active Linux processes for memory regions violating the
