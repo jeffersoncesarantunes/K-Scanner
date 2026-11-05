@@ -2,6 +2,9 @@ build/
 bin/
 obj/
 
+# Test binaries (compiled, do not commit)
+tests/unit/test_portable
+
 *.o
 *.a
 *.so
