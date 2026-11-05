@@ -1,32 +1,33 @@
 # Maintainer: Jefferson Cesar Antunes <jefferson.antunes@gmail.com>
 pkgname=kscanner
-pkgver=20260831
+pkgver() {
+    cd "$srcdir/$pkgname"
+    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
 pkgrel=1
 pkgdesc="Lightweight Linux memory auditing tool focused on RWX detection and automated forensic triage"
 arch=('x86_64')
 url="https://github.com/jeffersoncesarantunes/K-Scanner"
 license=('MIT')
-depends=('ncurses' 'binutils')
-makedepends=('gcc' 'make' 'clang' 'pkg-config' 'libbpf')
-optdepends=('libbpf: eBPF real-time RWX telemetry (--bpf flag)')
-source=("$pkgname-$pkgver.tar.gz::https://github.com/jeffersoncesarantunes/K-Scanner/archive/main.tar.gz")
-# Packaged straight from the default branch (no version tag required).
-# Generate the sha256sum with:
-#   curl -sL https://github.com/jeffersoncesarantunes/K-Scanner/archive/main.tar.gz | sha256sum
+depends=('ncurses' 'binutils' 'coreutils')
+makedepends=('git' 'gcc' 'make' 'clang' 'pkg-config' 'libbpf')
+optdepends=('libbpf: eBPF real-time RWX telemetry (--bpf flag)'
+            'yara: YARA rule-based scanning (--yara flag)')
+source=("git+${url}.git")
 sha256sums=('SKIP')
 
 build() {
-    cd "$srcdir/K-Scanner-main"
+    cd "$srcdir/$pkgname"
     make bpf
     make
 }
 
 check() {
-    cd "$srcdir/K-Scanner-main"
-    make test
+    cd "$srcdir/$pkgname"
+    make test-unit
 }
 
 package() {
-    cd "$srcdir/K-Scanner-main"
+    cd "$srcdir/$pkgname"
     make PREFIX="$pkgdir/usr" install
 }
