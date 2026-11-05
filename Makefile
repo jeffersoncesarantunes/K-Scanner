@@ -13,6 +13,11 @@ BPF_OBJ = $(BPF_DIR)/rwx_monitor.bpf.o
 SRCS = $(shell find src -name "*.c" ! -path "src/bpf/*")
 OBJS = $(SRCS:src/%.c=$(OBJ_DIR)/%.o)
 
+TEST_CC ?= cc
+TEST_CFLAGS = -Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE
+TEST_TARGET = tests/unit/test_portable
+TEST_SRC = tests/unit/test_portable.c src/core/scanner_pure.c src/modules/export_engine.c
+
 HAVE_LIBBPF := $(shell pkg-config --exists libbpf 2>/dev/null && echo 1 || echo 0)
 
 ifeq ($(HAVE_LIBBPF),1)
@@ -67,8 +72,16 @@ uninstall:
 	@-rmdir $(MANDIR) 2>/dev/null; true
 	@echo "  🗑 Removed $(TARGET)"
 
-test: $(TARGET) bpf
+test: $(TARGET) bpf test-unit
 	@bash tests/run_tests.sh
+
+test-unit: $(TEST_TARGET)
+	@echo "🧪 Running portable unit tests (no root required)..."
+	@./$(TEST_TARGET)
+
+$(TEST_TARGET): $(TEST_SRC) include/scanner_pure.h include/export_engine.h
+	@mkdir -p tests/unit
+	@$(TEST_CC) $(TEST_CFLAGS) $(TEST_SRC) -o $(TEST_TARGET)
 
 debug:
 	@$(MAKE) CFLAGS="-Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE -DDEBUG" clean $(TARGET)
