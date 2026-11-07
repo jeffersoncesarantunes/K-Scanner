@@ -79,13 +79,23 @@ forensic artifacts into `build/dumps/`.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## Security
+## Security Policy
 
-See [SECURITY.md](./SECURITY.md). Do not open public issues for security
-vulnerabilities.
+### Supported Versions
 
-Contact the maintainer via the contact information listed on my profile
-README.
+| Version | Supported |
+|---------|-----------|
+| latest | ✅ |
+
+### Reporting a Vulnerability
+
+K-Scanner is a forensic security tool designed for authorized use only. If
+you discover a security vulnerability, please do **not** open a public
+issue.
+
+Contact the maintainer via the contact information listed on my
+[profile README](https://github.com/jeffersoncesarantunes/jeffersoncesarantunes)
+(Matrix, GitHub, X, Mastodon, Discord).
 
 ## License
 
