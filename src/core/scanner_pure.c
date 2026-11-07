@@ -45,7 +45,7 @@ ConfidenceLevel map_context_tag(const char *path, char *out_tag, size_t tag_size
     if (strstr(path, "/usr/lib") || strstr(path, ".so") || strstr(path, "[vdso]") ||
         strstr(path, "[vvar]")) {
         snprintf(out_tag, tag_size, "SYSTEM_LIB");
-        return CONFIDENCE_SUSPICIOUS;
+        return CONFIDENCE_SAFE;
     }
     if (strstr(path, "/tmp") || strstr(path, "/dev/shm")) {
         snprintf(out_tag, tag_size, "VOLATILE_FS");

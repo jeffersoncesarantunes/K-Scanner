@@ -54,12 +54,12 @@ static void test_map_context_tag(void)
           "ld- -> DYN_LINKER / LOW");
 
     c = map_context_tag("/usr/lib/libc.so.6", tag, sizeof(tag));
-    CHECK(c == CONFIDENCE_SUSPICIOUS && strcmp(tag, "SYSTEM_LIB") == 0,
-          ".so in /usr/lib -> SYSTEM_LIB / SUSPICIOUS");
+    CHECK(c == CONFIDENCE_SAFE && strcmp(tag, "SYSTEM_LIB") == 0,
+          ".so in /usr/lib -> SYSTEM_LIB / SAFE");
 
     c = map_context_tag("[vdso]", tag, sizeof(tag));
-    CHECK(c == CONFIDENCE_SUSPICIOUS && strcmp(tag, "SYSTEM_LIB") == 0,
-          "[vdso] -> SYSTEM_LIB / SUSPICIOUS");
+    CHECK(c == CONFIDENCE_SAFE && strcmp(tag, "SYSTEM_LIB") == 0,
+          "[vdso] -> SYSTEM_LIB / SAFE");
 
     c = map_context_tag("[heap]", tag, sizeof(tag));
     CHECK(c == CONFIDENCE_CRITICAL && strcmp(tag, "DYNAMIC_MEM") == 0,

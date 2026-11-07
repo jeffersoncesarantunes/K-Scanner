@@ -106,40 +106,6 @@ static void scan_with_yara(const char *dump_path, const char *rule_path, const c
         fprintf(stderr, "[!] YARA scan failed: %s\n", rule_path);
 }
 
-static void write_disassembly_file(const void *buf, size_t size, const char *out_path,
-                                   unsigned long start_addr)
-{
-    size_t trunc = (size > 4096) ? 4096 : size;
-    char tmp_path[PATH_MAX * 2 + 8];
-    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", out_path);
-    FILE *tmp = fopen(tmp_path, "wb");
-    if (!tmp)
-        return;
-    fwrite(buf, 1, trunc, tmp);
-    fclose(tmp);
-
-    char addr_opt[64];
-    snprintf(addr_opt, sizeof(addr_opt), "x86-64,addr=0x%lx", start_addr);
-
-    pid_t child = fork();
-    if (child == 0) {
-        close_inherited_fds();
-        int fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
-        if (fd == -1)
-            _exit(1);
-        if (dup2(fd, STDOUT_FILENO) == -1)
-            _exit(1);
-        close(fd);
-        execvp("objdump", (char *[]){"objdump", "-D", "-b", "binary", "-m", "i386", "-M", addr_opt,
-                                     tmp_path, NULL});
-        _exit(127);
-    }
-    int st = 0;
-    if (child < 0 || waitpid(child, &st, 0) != child || !WIFEXITED(st) || WEXITSTATUS(st) != 0)
-        fprintf(stderr, "[!] objdump unavailable or failed for %s\n", out_path);
-    unlink(tmp_path);
-}
-
 static void dump_memory_region(int pid, char *addr_str)
 {
     char mem_path[PATH_MAX], out_path[PATH_MAX * 2], line[512];
@@ -238,8 +204,6 @@ static void dump_memory_region(int pid, char *addr_str)
                 fprintf(stderr, "[!] strings unavailable or failed\n");
             snprintf(out_path, sizeof(out_path), "%s/%s.hex.txt", dump_dir(), file_name);
             write_hex_dump(fpath, out_path, 256);
-            snprintf(out_path, sizeof(out_path), "%s/%s.disasm.txt", dump_dir(), file_name);
-            write_disassembly_file(buffer, size, out_path, start);
             snprintf(out_path, sizeof(out_path), "%s/%s.shellcode.txt", dump_dir(), file_name);
             scan_shellcode_patterns(buffer, size, out_path);
             if (g_yara_rule) {
@@ -490,7 +454,6 @@ int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_j
                     for (int i = getcurx(stdscr); i < COLS; i++)
                         printw(" ");
                     refresh();
-                    sleep(2);
                     attrset(A_NORMAL);
                 } else {
                     attron(COLOR_PAIR(5) | A_BOLD | A_REVERSE);
@@ -501,7 +464,6 @@ int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_j
                         printw(" ");
                     refresh();
                     beep();
-                    sleep(2);
                     attrset(A_NORMAL);
                 }
                 break;
@@ -530,6 +492,10 @@ int run_watch_loop(ExportFormat format, int silent_jit)
     int max_proc = 4096;
     char ts[64];
 
+    ForensicRecord *records = malloc(sizeof(ForensicRecord) * max_proc);
+    if (!records)
+        return 1;
+
     while (1) {
         if (feof(stdout) || ferror(stdout))
             break;
@@ -538,9 +504,6 @@ int run_watch_loop(ExportFormat format, int silent_jit)
         time_t t = time(NULL);
         strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", localtime(&t));
 
-        ForensicRecord *records = malloc(sizeof(ForensicRecord) * max_proc);
-        if (!records)
-            break;
         int rwx_total = 0;
         int count = scan_processes(records, max_proc, silent_jit, &rwx_total);
 
@@ -582,9 +545,10 @@ int run_watch_loop(ExportFormat format, int silent_jit)
                 export_record(&records[i], format);
         }
 
-        free(records);
         fflush(stdout);
         sleep(2);
     }
+
+    free(records);
     return 0;
 }
