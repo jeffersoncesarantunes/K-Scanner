@@ -84,6 +84,9 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 See [SECURITY.md](./SECURITY.md). Do not open public issues for security
 vulnerabilities.
 
+Contact the maintainer directly at antunes@gmx.us with details about the
+issue.
+
 ## License
 
 [MIT](LICENSE)
