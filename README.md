@@ -81,11 +81,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Security
 
-See [SECURITY.md](./SECURITY.md). Do not open public issues for security
-vulnerabilities.
-
-Contact the maintainer directly at antunes@gmx.us with details about the
-issue.
+See [SECURITY.md](./SECURITY.md)
 
 ## License
 
