@@ -75,6 +75,10 @@ forensic artifacts into `build/dumps/`.
 - Not every RWX region is malicious (browsers, Node, Python, Electron
   use RWX for JIT). Use `--silent-jit` to reduce noise.
 
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 ## Security
 
 See [SECURITY.md](./SECURITY.md). Do not open public issues for
