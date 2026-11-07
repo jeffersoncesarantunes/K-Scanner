@@ -85,4 +85,4 @@ See [SECURITY.md](./SECURITY.md)
 
 ## License
 
-[MIT](LICENSE)
+See [LICENSE](./LICENSE)
