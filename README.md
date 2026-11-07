@@ -59,6 +59,14 @@ sudo ./kscanner --bpf        # eBPF real-time telemetry
 In the TUI, press `ENTER` on an alert to dump the region and generate
 forensic artifacts into `build/dumps/`.
 
+## Project in Action
+
+![Live Scan](./Images/kscanner1.png)
+
+![RWX Detection](./Images/kscanner2.png)
+
+![Forensic Extraction](./Images/kscanner3.png)
+
 ## Limitations
 
 - Requires root to read `/proc/[PID]/mem` of other processes.
