@@ -2,6 +2,11 @@
 
 Linux memory auditing tool for RWX (W^X) detection and automated forensic triage.
 
+[![CI](https://img.shields.io/github/actions/workflow/status/jeffersoncesarantunes/K-Scanner/ci.yml?style=flat-square&logo=githubactions&label=CI)](https://github.com/jeffersoncesarantunes/K-Scanner/actions/workflows/ci.yml)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/jeffersoncesarantunes/K-Scanner/codeql.yml?style=flat-square&logo=codeql&label=CodeQL)](https://github.com/jeffersoncesarantunes/K-Scanner/actions/workflows/codeql.yml)
+[![License-MIT](https://img.shields.io/badge/License-MIT-EE0000?style=flat-square&logo=license&logoColor=white)](LICENSE)
+[![Tested-On](https://img.shields.io/badge/Tested%20on-Linux%20x86_64-1793D1?style=flat-square)](https://www.kernel.org/)
+
 K-Scanner inspects running processes for memory regions that violate the
 W^X (Write XOR Execute) principle. It reads `/proc/[PID]/maps`, flags RWX
 regions by confidence, and extracts forensic artifacts — all read-only,
