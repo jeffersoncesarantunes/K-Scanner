@@ -79,10 +79,40 @@ forensic artifacts into `build/dumps/`.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## Security
+## Security Policy
 
-See [SECURITY.md](./SECURITY.md). Do not open public issues for
-vulnerabilities.
+### Supported Versions
+
+| Version | Supported |
+|---------|-----------|
+| latest | ✅ |
+
+### Reporting a Vulnerability
+
+K-Scanner is a forensic security tool designed for authorized use only. If
+you discover a security vulnerability, please do **not** open a public
+issue.
+
+Contact the maintainer through the channels listed on my GitHub or
+Codeberg profile README for current contact information.
+
+We commit to acknowledging receipt within 48 hours and providing a fix
+timeline within 7 days.
+
+### Known Limitations
+
+* **TOCTOU in /proc analysis:** The tool reads live kernel memory
+  interfaces (`/proc/PID/mem`, `/proc/PID/maps`). Between opening and
+  reading these files, the target PID could be recycled by the kernel.
+  This is an inherent limitation of live forensic analysis and cannot be
+  fully mitigated without kernel snapshots.
+* **TOCTOU in YARA scanning:** The YARA rule file path is validated with
+  `access()` before use in `execvp()`. A local attacker with write access
+  to the path could theoretically swap the file between check and
+  execution. This window is minimized by re-validation at the point of use.
+* **History rewriting:** This repository's git history was cleaned with
+  `git-filter-repo` to remove accidentally committed sensitive data. If
+  you have an older clone, please re-clone from the latest remote.
 
 ## License
 
