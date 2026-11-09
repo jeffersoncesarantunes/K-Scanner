@@ -65,6 +65,14 @@ sudo ./kscanner --json
 # ]
 ```
 
+## Project in Action
+
+![Live Scan](./Images/kscanner1.png)
+
+![RWX Detection](./Images/kscanner2.png)
+
+![Forensic Extraction](./Images/kscanner3.png)
+
 ## Como construir e usar
 
 ```bash
