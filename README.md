@@ -89,11 +89,6 @@ sudo ./kscanner --bpf        # real-time eBPF telemetry
 
 `make bpf` compiles the BPF object; `make` builds the binary. `libbpf` is detected automatically for eBPF support.
 
-## Mirroring
-
-This project is mirrored on Codeberg so it doesn't depend on a single platform:
-https://codeberg.org/jeffersoncesarantunes/K-Scanner
-
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
