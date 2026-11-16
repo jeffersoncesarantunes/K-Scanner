@@ -6,6 +6,9 @@
 #include "bpf_telemetry.h"
 
 extern volatile sig_atomic_t g_terminate;
+extern int g_plain_mode;
+
+void set_plain_mode(int plain);
 
 int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_jit);
 int run_watch_loop(ExportFormat format, int silent_jit);

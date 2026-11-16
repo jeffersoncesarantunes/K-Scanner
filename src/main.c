@@ -54,6 +54,7 @@ static void print_main_usage(void) {
     printf("  --bpf                 Enable eBPF real-time RWX telemetry (requires root)\n");
     printf("  --silent-jit          Suppress JIT engine RWX from alert count (reduce FP)\n");
     printf("  --watch               Continuous headless monitoring (2s cycles, Ctrl+C to exit)\n");
+    printf("  --plain               Traditional terminal output (no ncurses TUI)\n");
     printf("  --yara <rule.yara>    Scan forensic dumps with YARA rules (requires yara)\n");
     printf("  --dump-dir <dir>      Forensic dump directory (default: build/dumps)\n");
     printf("  --version             Show version\n");
@@ -110,6 +111,9 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "--watch") == 0) {
             use_watch = 1;
             use_tui = 0;
+        } else if (strcmp(argv[i], "--plain") == 0) {
+            use_tui = 0;
+            set_plain_mode(1);
         } else if (strcmp(argv[i], "--silent-jit") == 0) {
             silent_jit = 1;
         } else if (strcmp(argv[i], "--yara") == 0) {

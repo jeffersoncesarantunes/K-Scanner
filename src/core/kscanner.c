@@ -27,6 +27,12 @@ static const char *g_yara_rule = NULL;
 static char *g_yara_binary = NULL;
 static char g_dump_dir[PATH_MAX] = "build/dumps";
 volatile sig_atomic_t g_terminate = 0;
+int g_plain_mode = 0;
+
+void set_plain_mode(int plain)
+{
+    g_plain_mode = plain;
+}
 
 void set_dump_dir(const char *path)
 {
@@ -444,6 +450,28 @@ int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_j
         return 1;
     int rwx_total = 0;
     int count = scan_processes(records, 1024, silent_jit, &rwx_total);
+
+    if (format == EXPORT_TERMINAL && g_plain_mode) {
+        printf("%-8s %-20s %-12s %-10s %-18s %-48s\n",
+               "PID", "PROCESS", "STATUS", "CONFIDENCE", "ADDR", "CONTAINER");
+        for (int i = 0; i < count; i++) {
+            const char *cl;
+            switch (records[i].confidence) {
+            case CONFIDENCE_SAFE:       cl = "SAFE"; break;
+            case CONFIDENCE_LOW:        cl = "LOW"; break;
+            case CONFIDENCE_SUSPICIOUS: cl = "MEDIUM"; break;
+            case CONFIDENCE_CRITICAL:   cl = "CRITICAL"; break;
+            default:                    cl = "?"; break;
+            }
+            printf("%-8d %-20.20s %-12s %-10s %-18s %-48s\n",
+                   records[i].pid, records[i].process_name,
+                   records[i].status, cl, records[i].mem_addr,
+                   records[i].container_id);
+        }
+        printf("--- ALERTS: %d / SCANNED: %d ---\n", rwx_total, count);
+        free(records);
+        return 0;
+    }
 
     if (format == EXPORT_TERMINAL) {
         int selected = 0;
