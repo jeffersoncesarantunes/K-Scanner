@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <signal.h>
 #include "../include/kscanner.h"
 #include "../include/scanner_core.h"
 #include "../include/colors.h"
@@ -11,32 +12,37 @@
 #include "../include/tui_engine.h"
 #include "../include/bpf_telemetry.h"
 
-static int resolve_binary_path(const char *name, char **out) {
-    const char *path_env = getenv("PATH");
-    if (!path_env) return -1;
+extern volatile sig_atomic_t g_terminate;
 
-    char *path_copy = strdup(path_env);
-    if (!path_copy) return -1;
+static void handle_sigterm(int sig)
+{
+    (void)sig;
+    g_terminate = 1;
+}
 
-    char *dir;
-    char full[4096];
-    int found = -1;
+static int install_signal_handlers(void)
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = handle_sigterm;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGINT, &sa, NULL) != 0) return -1;
+    if (sigaction(SIGTERM, &sa, NULL) != 0) return -1;
+    return 0;
+}
 
-    dir = strtok(path_copy, ":");
-    while (dir) {
-        snprintf(full, sizeof(full), "%s/%s", dir, name);
-        struct stat st;
-        if (stat(full, &st) == 0 && S_ISREG(st.st_mode) && (st.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))) {
-            *out = strdup(full);
-            if (!*out) { free(path_copy); return -1; }
-            found = 0;
-            break;
+static void drop_privileges(void)
+{
+    const char *sudo_uid = getenv("SUDO_UID");
+    if (sudo_uid && *sudo_uid) {
+        uid_t uid = (uid_t)strtoul(sudo_uid, NULL, 10);
+        if (uid != 0 && uid != getuid()) {
+            if (setgid(uid) != 0 || setuid(uid) != 0)
+                fprintf(stderr, "[!] drop_privileges: failed to drop to uid %lu\n",
+                        (unsigned long)uid);
         }
-        dir = strtok(NULL, ":");
     }
-
-    free(path_copy);
-    return found;
 }
 
 static void print_main_usage(void) {
@@ -115,13 +121,11 @@ int main(int argc, char *argv[]) {
                     return 1;
                 }
                 close(rule_fd);
-                char *yara_bin = NULL;
-                if (resolve_binary_path("yara", &yara_bin) != 0) {
-                    fprintf(stderr, "Error: 'yara' binary not found in PATH\n");
-                    return 1;
-                }
+                const char *yara_bin = "/usr/bin/yara";
+                struct stat st;
+                if (stat(yara_bin, &st) != 0 || !S_ISREG(st.st_mode))
+                    yara_bin = "yara";
                 set_yara_binary_path(yara_bin);
-                free(yara_bin);
             } else {
                 fprintf(stderr, "Error: --yara requires a rule file path\n");
                 return 1;
@@ -141,6 +145,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    install_signal_handlers();
+
     BpfTelemetryState bpf_state;
     if (use_bpf) {
         if (handle_bpf_flag(&bpf_state) != 0) {
@@ -154,6 +160,7 @@ int main(int argc, char *argv[]) {
     if (use_watch) {
         run_watch_loop(selected_format, silent_jit);
         if (use_bpf) bpf_telemetry_shutdown(&bpf_state);
+        drop_privileges();
         return 0;
     }
 
@@ -165,6 +172,7 @@ int main(int argc, char *argv[]) {
         if (run_scan_formatted(selected_format, use_bpf ? &bpf_state : NULL, silent_jit) != 0) {
             fprintf(stderr, "%s[!] Critical error during scan%s\n", CLR_RED, CLR_RESET);
             if (use_bpf) bpf_telemetry_shutdown(&bpf_state);
+            drop_privileges();
             return 1;
         }
     }
@@ -173,5 +181,6 @@ int main(int argc, char *argv[]) {
         bpf_telemetry_shutdown(&bpf_state);
     }
 
+    drop_privileges();
     return 0;
 }

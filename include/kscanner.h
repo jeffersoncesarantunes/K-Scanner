@@ -1,8 +1,11 @@
 #ifndef KSCANNER_H
 #define KSCANNER_H
 
+#include <signal.h>
 #include "export_engine.h"
 #include "bpf_telemetry.h"
+
+extern volatile sig_atomic_t g_terminate;
 
 int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_jit);
 int run_watch_loop(ExportFormat format, int silent_jit);

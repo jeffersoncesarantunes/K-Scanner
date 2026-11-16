@@ -2,7 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/resource.h>
+#include <sys/types.h>
+#include <limits.h>
+#include <openssl/sha.h>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #ifdef HAVE_LIBBPF
 #include <bpf/libbpf.h>
@@ -91,6 +98,55 @@ static const char *resolve_bpf_obj_path(void)
     return NULL;
 }
 
+static int verify_bpf_obj_hash(const char *obj_path)
+{
+    char hash_path[PATH_MAX];
+    snprintf(hash_path, sizeof(hash_path), "%s.sha256", obj_path);
+    FILE *hf = fopen(hash_path, "r");
+    if (!hf) {
+        fprintf(stderr, "[!] BPF object hash file not found: %s\n", hash_path);
+        return -1;
+    }
+    char expected_hash[SHA256_DIGEST_LENGTH * 2 + 2] = {0};
+    if (!fgets(expected_hash, sizeof(expected_hash), hf)) {
+        fclose(hf);
+        return -1;
+    }
+    fclose(hf);
+    char *sp = strchr(expected_hash, ' ');
+    if (sp) *sp = '\0';
+    if (strlen(expected_hash) != SHA256_DIGEST_LENGTH * 2) {
+        fprintf(stderr, "[!] BPF object hash file malformed\n");
+        return -1;
+    }
+
+    int fd = open(obj_path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+    if (fd == -1) {
+        fprintf(stderr, "[!] Cannot open BPF object: %s\n", obj_path);
+        return -1;
+    }
+    SHA256_CTX ctx;
+    SHA256_Init(&ctx);
+    unsigned char buf[8192];
+    ssize_t n;
+    while ((n = read(fd, buf, sizeof(buf))) > 0)
+        SHA256_Update(&ctx, buf, (size_t)n);
+    close(fd);
+    if (n < 0) return -1;
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+    SHA256_Final(digest, &ctx);
+    char actual_hash[SHA256_DIGEST_LENGTH * 2 + 1];
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+        snprintf(actual_hash + i * 2, 3, "%02x", digest[i]);
+    actual_hash[SHA256_DIGEST_LENGTH * 2] = '\0';
+
+    if (strcmp(expected_hash, actual_hash) != 0) {
+        fprintf(stderr, "[!] BPF object hash mismatch: possible tampering\n");
+        return -1;
+    }
+    return 0;
+}
+
 int bpf_telemetry_init(BpfTelemetryState *state)
 {
     if (!state) return -1;
@@ -102,6 +158,12 @@ int bpf_telemetry_init(BpfTelemetryState *state)
         snprintf(state->error_msg, sizeof(state->error_msg),
                  "BPF object not found (checked '%s', '%s')",
                  BPF_OBJ_INSTALLED, BPF_OBJ_BUILDTREE);
+        return -1;
+    }
+
+    if (verify_bpf_obj_hash(obj_path) != 0) {
+        snprintf(state->error_msg, sizeof(state->error_msg),
+                 "BPF object hash verification failed");
         return -1;
     }
 
@@ -174,6 +236,7 @@ int bpf_telemetry_init(BpfTelemetryState *state)
     state->active = 1;
     return 0;
 }
+#pragma GCC diagnostic pop
 
 void bpf_telemetry_poll(BpfTelemetryState *state)
 {

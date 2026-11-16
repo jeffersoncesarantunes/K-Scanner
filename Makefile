@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Wpedantic -Iinclude -O2 -std=c99 -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE
-LDFLAGS = -lncurses -pie -Wl,-z,relro,-z,now -Wl,-z,noexecstack
+LDFLAGS = -lncurses -lcrypto -pie -Wl,-z,relro,-z,now -Wl,-z,noexecstack
 OBJ_DIR = build/obj
 BPF_DIR = build/bpf
 DUMP_DIR = build/dumps
@@ -91,7 +91,7 @@ $(TEST_TARGET): $(TEST_SRC) include/scanner_pure.h include/export_engine.h
 	@$(TEST_CC) $(TEST_CFLAGS) $(TEST_SRC) -o $(TEST_TARGET) $(LDFLAGS)
 
 debug:
-	@$(MAKE) CFLAGS="-Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE -DDEBUG" clean $(TARGET)
+	@$(MAKE) CFLAGS="-Wall -Wextra -Wpedantic -Iinclude -O0 -g -std=c99 -D_DEFAULT_SOURCE -DDEBUG" $(TARGET)
 
 triage:
 	@./scripts/forensic_triage.sh $(PID)

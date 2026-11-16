@@ -10,10 +10,15 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <ncurses.h>
+#include <openssl/sha.h>
+#include <pwd.h>
+#include <grp.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -21,6 +26,7 @@
 static const char *g_yara_rule = NULL;
 static char *g_yara_binary = NULL;
 static char g_dump_dir[PATH_MAX] = "build/dumps";
+volatile sig_atomic_t g_terminate = 0;
 
 void set_dump_dir(const char *path)
 {
@@ -37,10 +43,48 @@ static const char *dump_dir(void)
     return g_dump_dir;
 }
 
+static void handle_sigterm(int sig)
+{
+    (void)sig;
+    g_terminate = 1;
+}
+
+static int install_signal_handlers(void)
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = handle_sigterm;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGINT, &sa, NULL) != 0) return -1;
+    if (sigaction(SIGTERM, &sa, NULL) != 0) return -1;
+    return 0;
+}
+
+static int validate_dump_dir(const char *dir)
+{
+    if (!dir || !*dir)
+        return -1;
+    char resolved[PATH_MAX];
+    if (realpath(dir, resolved) == NULL)
+        return -1;
+    if (strstr(resolved, "/..") != NULL)
+        return -1;
+    struct stat st;
+    if (lstat(resolved, &st) != 0)
+        return -1;
+    if (S_ISLNK(st.st_mode))
+        return -1;
+    return 0;
+}
+
 static int ensure_dump_dir(void)
 {
+    const char *dir = dump_dir();
+    if (validate_dump_dir(dir) != 0)
+        return -1;
     char tmp[PATH_MAX];
-    snprintf(tmp, sizeof(tmp), "%s", dump_dir());
+    snprintf(tmp, sizeof(tmp), "%s", dir);
     size_t len = strlen(tmp);
     if (len == 0 || len >= sizeof(tmp))
         return -1;
@@ -50,10 +94,16 @@ static int ensure_dump_dir(void)
         if (*p != '/')
             continue;
         *p = '\0';
+        struct stat st;
+        if (lstat(tmp, &st) == 0 && S_ISLNK(st.st_mode))
+            return -1;
         if (mkdir(tmp, 0750) != 0 && errno != EEXIST)
             return -1;
         *p = '/';
     }
+    struct stat st;
+    if (lstat(tmp, &st) == 0 && S_ISLNK(st.st_mode))
+        return -1;
     if (mkdir(tmp, 0750) != 0 && errno != EEXIST)
         return -1;
     return 0;
@@ -87,7 +137,7 @@ static void scan_with_yara(const char *dump_path, const char *rule_path, const c
     pid_t child = fork();
     if (child == 0) {
         close_inherited_fds();
-        int fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+        int fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW | O_CLOEXEC, 0600);
         if (fd == -1)
             _exit(1);
         if (dup2(fd, STDOUT_FILENO) == -1)
@@ -104,6 +154,16 @@ static void scan_with_yara(const char *dump_path, const char *rule_path, const c
     int st = 0;
     if (waitpid(child, &st, 0) != child || !WIFEXITED(st) || WEXITSTATUS(st) != 0)
         fprintf(stderr, "[!] YARA scan failed: %s\n", rule_path);
+}
+
+static int pid_still_same(pid_t pid)
+{
+    char path[256];
+    snprintf(path, sizeof(path), "/proc/%d", pid);
+    struct stat st;
+    if (stat(path, &st) != 0)
+        return 0;
+    return st.st_ino != 0;
 }
 
 static void dump_memory_region(int pid, char *addr_str)
@@ -129,6 +189,8 @@ static void dump_memory_region(int pid, char *addr_str)
         return;
     if (end <= start)
         return;
+    if (!pid_still_same(pid))
+        return;
     size_t size = end - start;
     if (size > 256 * 1024 * 1024)
         return;
@@ -138,6 +200,11 @@ static void dump_memory_region(int pid, char *addr_str)
     snprintf(mem_path, sizeof(mem_path), "/proc/%d/mem", pid);
     int fd = open(mem_path, O_RDONLY);
     if (fd == -1) {
+        free(buffer);
+        return;
+    }
+    if (!pid_still_same(pid)) {
+        close(fd);
         free(buffer);
         return;
     }
@@ -151,17 +218,21 @@ static void dump_memory_region(int pid, char *addr_str)
     if ((size_t) got == size && ensure_dump_dir() == 0) {
         snprintf(file_name, sizeof(file_name), "pid_%d_%lx.bin", pid, start);
         snprintf(out_path, sizeof(out_path), "%s/%s", dump_dir(), file_name);
-        int out_fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+        int out_fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW | O_CLOEXEC, 0600);
         if (out_fd != -1) {
             size_t written = 0;
+            int write_ok = 1;
             while (written < size) {
                 ssize_t n = write(out_fd, (char *) buffer + written, size - written);
-                if (n <= 0)
+                if (n <= 0) {
+                    write_ok = 0;
                     break;
+                }
                 written += (size_t) n;
             }
             close(out_fd);
-            if (written != size) {
+            if (!write_ok || written != size) {
+                unlink(out_path);
                 close(fd);
                 free(buffer);
                 return;
@@ -172,13 +243,17 @@ static void dump_memory_region(int pid, char *addr_str)
             if (child == 0) {
                 close_inherited_fds();
                 snprintf(out_path, sizeof(out_path), "%s/%s.sha256", dump_dir(), file_name);
-                int ofd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+                int ofd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW | O_CLOEXEC, 0600);
                 if (ofd == -1)
                     _exit(1);
                 if (dup2(ofd, STDOUT_FILENO) == -1)
                     _exit(1);
                 close(ofd);
-                execvp("sha256sum", (char *[]){"sha256sum", fpath, NULL});
+                const char *sha_bin = "/usr/bin/sha256sum";
+                struct stat st;
+                if (stat(sha_bin, &st) != 0)
+                    sha_bin = "sha256sum";
+                execl(sha_bin, "sha256sum", fpath, NULL);
                 _exit(1);
             }
             int st = 0;
@@ -189,13 +264,17 @@ static void dump_memory_region(int pid, char *addr_str)
             if (child == 0) {
                 close_inherited_fds();
                 snprintf(out_path, sizeof(out_path), "%s/%s.strings.txt", dump_dir(), file_name);
-                int ofd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+                int ofd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW | O_CLOEXEC, 0600);
                 if (ofd == -1)
                     _exit(1);
                 if (dup2(ofd, STDOUT_FILENO) == -1)
                     _exit(1);
                 close(ofd);
-                execvp("strings", (char *[]){"strings", "-n", "6", fpath, NULL});
+                const char *str_bin = "/usr/bin/strings";
+                struct stat st2;
+                if (stat(str_bin, &st2) != 0)
+                    str_bin = "strings";
+                execl(str_bin, "strings", "-n", "6", fpath, NULL);
                 _exit(1);
             }
             st = 0;
@@ -260,10 +339,12 @@ static int check_mem_rwx(int pid, char *out_info, char *out_addr, ConfidenceLeve
             found_count++;
         }
     }
+    fclose(f);
+    if (!verify_pid_still_valid(pid))
+        return 0;
     if (found_count == 0) {
         pathname[0] = '\0';
     }
-    fclose(f);
     if (found_count > 0) {
         char tag[32];
         *out_conf = map_context_tag(raw_origin, tag, sizeof(tag));
@@ -330,7 +411,7 @@ static int scan_processes(ForensicRecord *records, int max_records, int silent_j
     struct dirent *entry;
     int count = 0;
     int rwx_total = 0;
-    while ((entry = readdir(dir)) != NULL && count < max_records) {
+    while ((entry = readdir(dir)) != NULL && count < max_records && !g_terminate) {
         if (!isdigit(entry->d_name[0]))
             continue;
         pid_t pid = (pid_t) strtol(entry->d_name, NULL, 10);
@@ -367,7 +448,7 @@ int run_scan_formatted(ExportFormat format, BpfTelemetryState *bpf, int silent_j
     if (format == EXPORT_TERMINAL) {
         int selected = 0;
         int running = 1;
-        while (running) {
+        while (running && !g_terminate) {
             if (bpf && bpf->active) {
                 bpf_telemetry_poll(bpf);
             }
@@ -491,12 +572,13 @@ int run_watch_loop(ExportFormat format, int silent_jit)
     int cycle = 0;
     int max_proc = 4096;
     char ts[64];
+    install_signal_handlers();
 
     ForensicRecord *records = malloc(sizeof(ForensicRecord) * max_proc);
     if (!records)
         return 1;
 
-    while (1) {
+    while (!g_terminate) {
         if (feof(stdout) || ferror(stdout))
             break;
         cycle++;
@@ -552,3 +634,4 @@ int run_watch_loop(ExportFormat format, int silent_jit)
     free(records);
     return 0;
 }
+

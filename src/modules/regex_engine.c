@@ -5,6 +5,17 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
+
+static int pid_still_same(pid_t pid)
+{
+    char path[256];
+    snprintf(path, sizeof(path), "/proc/%d", pid);
+    struct stat st;
+    if (stat(path, &st) != 0)
+        return 0;
+    return st.st_ino != 0;
+}
 
 int start_live_regex_hunting(pid_t pid, const char *pattern) {
     char maps_path[64], mem_path[64], line[1024];
@@ -26,8 +37,21 @@ int start_live_regex_hunting(pid_t pid, const char *pattern) {
         return -1;
     }
 
+    if (!pid_still_same(pid)) {
+        fclose(maps_file);
+        regfree(&regex);
+        return -1;
+    }
+
     mem_fd = open(mem_path, O_RDONLY);
     if (mem_fd < 0) {
+        fclose(maps_file);
+        regfree(&regex);
+        return -1;
+    }
+
+    if (!pid_still_same(pid)) {
+        close(mem_fd);
         fclose(maps_file);
         regfree(&regex);
         return -1;
@@ -65,12 +89,6 @@ int start_live_regex_hunting(pid_t pid, const char *pattern) {
                 match.address_start = start + (unsigned long long)(current_pos - buffer) + (unsigned long long)pmatch[0].rm_so;
                 
                 memset(match.context_preview, 0, sizeof(match.context_preview));
-                size_t match_offset = (size_t)pmatch[0].rm_so;
-                size_t preview_start = (match_offset > 10) ? match_offset - 10 : match_offset;
-                
-                size_t copy_len = (remaining - preview_start > 60) ? 60 : (remaining - preview_start);
-                memcpy(match.context_preview, current_pos + preview_start, copy_len);
-                match.context_preview[copy_len] = '\0';
 
                 dispatch_regex_match(&match);
                 
@@ -95,7 +113,6 @@ int start_live_regex_hunting(pid_t pid, const char *pattern) {
 void dispatch_regex_match(regex_match_t *match) {
     printf("\n--- AUDIT DETECTION ---\n");
     printf("Address: 0x%llx | PID: %d\n", match->address_start, match->pid);
-    printf("Context: %s\n", match->context_preview);
 }
 
 void run_live_regex_scan(int pid, const char *pattern) {
